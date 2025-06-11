@@ -1,0 +1,5 @@
+"git checkout" muda o branch no terminal
+"git pull origin main" puxa as atualizações do repositório main
+"git add ." adiciona novos arquivos e/ou mudanças
+"git commit -m "mensagem explicativa de alterações"" faz o commit das alterações
+"git push origin "nome da branch"" envia as atualizações pro git hub

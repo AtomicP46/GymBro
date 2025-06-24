@@ -1,256 +1,126 @@
-package Classes;
+package br.ifg.gymbro.model;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.Scanner;
+import java.time.LocalDateTime;
 
-public class treino {
-    private float pesoTreino;
-    private int repeticoes;
-    private LocalDate dataExer;
-    private int series;
-    private boolean aqueciemnto;
-    private String anotacao;
+public class Treino {
+    private Long id;
+    private String nome;
+    private LocalDateTime dataHoraInicio;
+    private LocalDateTime dataHoraFim;
+    private Long usuarioId;
+    private Long personalId;
+    
+    // Para exibição
+    private String usuarioNome;
+    private String personalNome;
 
-    public treino() {
+    // Construtores
+    public Treino() {}
 
+    public Treino(String nome, LocalDateTime dataHoraInicio, Long usuarioId, Long personalId) {
+        this.nome = nome;
+        this.dataHoraInicio = dataHoraInicio;
+        this.usuarioId = usuarioId;
+        this.personalId = personalId;
     }
 
-    public treino(float pesoTreino, int repeticoes, int series, boolean aqueciemnto, String anotacao,
-            LocalDate dataExer) {
-        this.pesoTreino = pesoTreino;
-        this.repeticoes = repeticoes;
-        this.dataExer = dataExer;
-        this.series = series;
-        this.aqueciemnto = aqueciemnto;
-        this.anotacao = anotacao;
+    public Treino(Long id, String nome, LocalDateTime dataHoraInicio, LocalDateTime dataHoraFim, 
+                  Long usuarioId, Long personalId) {
+        this.id = id;
+        this.nome = nome;
+        this.dataHoraInicio = dataHoraInicio;
+        this.dataHoraFim = dataHoraFim;
+        this.usuarioId = usuarioId;
+        this.personalId = personalId;
     }
 
-    public float getPesoTreino() {
-        return pesoTreino;
+    // Getters e Setters
+    public Long getId() {
+        return id;
     }
 
-    public void setPesoTreino(float pesoTreino) {
-        this.pesoTreino = pesoTreino;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public int getRepeticao() {
-        return repeticoes;
+    public String getNome() {
+        return nome;
     }
 
-    public void setRepeticao(int repeticoes) {
-        this.repeticoes = repeticoes;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
-    public LocalDate getData() {
-        return dataExer;
+    public LocalDateTime getDataHoraInicio() {
+        return dataHoraInicio;
     }
 
-    public void setData(LocalDate dataExer) {
-        this.dataExer = dataExer;
+    public void setDataHoraInicio(LocalDateTime dataHoraInicio) {
+        this.dataHoraInicio = dataHoraInicio;
     }
 
-    public int getSeries() {
-        return series;
+    public LocalDateTime getDataHoraFim() {
+        return dataHoraFim;
     }
 
-    public void setSeries(int series) {
-        this.series = series;
+    public void setDataHoraFim(LocalDateTime dataHoraFim) {
+        this.dataHoraFim = dataHoraFim;
     }
 
-    public boolean getAquecimento() {
-        return aqueciemnto;
+    public Long getUsuarioId() {
+        return usuarioId;
     }
 
-    public void setAquecimento(boolean aqueciemnto) {
-        this.aqueciemnto = aqueciemnto;
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
     }
 
-    public String getAnotacao() {
-        return anotacao;
+    public Long getPersonalId() {
+        return personalId;
     }
 
-    public void setAnotacao(String anotacao) {
-        this.anotacao = anotacao;
+    public void setPersonalId(Long personalId) {
+        this.personalId = personalId;
     }
 
-    public void RegistrarTreino(Scanner scanner) {
-
-        System.out.printf("\nInforme a data do treino formato (dd/mm/yyyy): ");
-        String dataInformada = scanner.nextLine();
-        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-        try {
-            dataExer = LocalDate.parse(dataInformada, formato);
-            System.out.println("Data registrada com sucesso!");
-        } catch (DateTimeParseException e) {
-            System.out.printf("Formato de data incorreta ");
-            return;
-        }
-
-        System.out.printf("\nInforme o peso do treino: ");
-        pesoTreino = scanner.nextFloat();
-        System.out.printf("\nInforme o numero de repetições: ");
-        repeticoes = scanner.nextInt();
-        System.out.printf("\nInforme a quantidade de series: ");
-        series = scanner.nextInt();
-        scanner.nextLine();
-
-        System.out.printf("\nInforme se é necessário um aquecimento (Sim ou Não): ");
-        String resposta = scanner.nextLine().trim().toLowerCase();
-        aqueciemnto = resposta.equals("sim");
-
-        System.out.printf("\nAnotações extrar: ");
-        anotacao = scanner.nextLine();
+    public String getUsuarioNome() {
+        return usuarioNome;
     }
 
-    public void ExibirTreino() {
-        System.out.printf("\nData do treino: " + dataExer);
-        System.out.printf("\nPeso do treino: " + pesoTreino);
-        System.out.printf("\nNumero de repetições: " + repeticoes);
-        System.out.printf("\nQuatidade de series: " + series);
-        System.out.printf("\nNecesario aquecimento: " + (aqueciemnto ? "sim" : "não"));
-        System.out.printf("\nAnotações: " + anotacao + "\n\n");
+    public void setUsuarioNome(String usuarioNome) {
+        this.usuarioNome = usuarioNome;
     }
 
-    public void EdiçãoTreino(Scanner scanner){
-        boolean rodEdicao = true;
-        boolean respostaConfirm = false;
+    public String getPersonalNome() {
+        return personalNome;
+    }
 
-        while (rodEdicao) {
-            System.out.printf("\nO que deseja editar?\n");
-            System.out.printf("1: Data\n2: Peso\n3: Repetições\n4: Series\n5: Nececidade de aquecimento\n6: Anotações\n7: Encerrar\n");
-            int opModificacao = scanner.nextInt(); 
-            switch (opModificacao) {
-                case 1:
-                    System.out.printf("\nInforme a nova data formato (dd/MM/yyyy): ");
-                    String novaDataInformada = scanner.nextLine();
-                    DateTimeFormatter novadataForm = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    
-                    try {
-                        LocalDate novaData = LocalDate.parse(novaDataInformada, novadataForm);
-                        System.out.printf("Antiga data: " + dataExer);
-                        System.out.printf("\nNova data: " + novaData);
-                        System.out.printf("Confirmar modificação? (Sim : Não)");
-                        String resp = scanner.nextLine().trim().toLowerCase();
-                        respostaConfirm = resp.equals("sim");
+    public void setPersonalNome(String personalNome) {
+        this.personalNome = personalNome;
+    }
 
-                        if (respostaConfirm) {
-                            dataExer = novaData;
-                            respostaConfirm = false;
-                            System.out.printf("\n- Edição realizada com sucesso -\n");
-                        } else {
-                            System.out.printf("\n- Edição de data cancelada -\n");
-                        }
+    // Métodos utilitários
+    public boolean isIniciado() {
+        return dataHoraInicio != null;
+    }
 
-                    } catch (DateTimeParseException e) {
-                        System.out.printf("\nERRO! - Formato de data incorreto\nTente novamente...\n");
-                        continue;
-                    }
-                break;
+    public boolean isFinalizado() {
+        return dataHoraFim != null;
+    }
 
-                case 2:
-                    System.out.printf("\nInforme o novo peso: ");
-                    float novoPeso = scanner.nextFloat();
-                    System.out.printf("\nPeso antigo: " + pesoTreino);
-                    System.out.printf("\nNovo peso: " + novoPeso);
-                    System.out.printf("Confirmar modificação? (Sim : Não)");
-                    String resp2 = scanner.nextLine().trim().toLowerCase();
-                    respostaConfirm = resp2.equals("sim");
+    public boolean isEmAndamento() {
+        return isIniciado() && !isFinalizado();
+    }
 
-                    if (respostaConfirm) {
-                        pesoTreino = novoPeso;
-                        respostaConfirm = false;
-                        System.out.printf("\n- Edição realizada com sucesso -\n");
-                    } else {
-                        System.out.printf("\n- Edição de data cancelada -\n");
-                    }
-
-                break;
-
-                case 3:
-                    System.out.printf("\nInforme o novo valor de repetição: ");
-                    int novaRepetição = scanner.nextInt();
-                    System.out.printf("\nAntigo valor de repetição: " + repeticoes);
-                    System.out.printf("\nNovo valor de repetição: " + novaRepetição);
-                    System.out.printf("Confirmar modificação? (Sim : Não)");
-                    String resp3 = scanner.nextLine().trim().toLowerCase();
-                    respostaConfirm = resp3.equals("sim");
-
-                    if (respostaConfirm) {
-                        repeticoes = novaRepetição;
-                        respostaConfirm = false;
-                        System.out.printf("\n- Edição realizada com sucesso -\n");
-                    } else {
-                        System.out.printf("\n- Edição de data cancelada -\n");
-                    }
-                break;
-
-                case 4:
-                    System.out.printf("\nInforme a nova quantidade de series: ");
-                    int novaSerie = scanner.nextInt();
-                    System.out.printf("\nAntigo valor de repetição: " + series);
-                    System.out.printf("\nNovo valor de repetição: " + novaSerie);
-                    System.out.printf("Confirmar modificação? (Sim : Não)");
-                    String resp4 = scanner.nextLine().trim().toLowerCase();
-                    respostaConfirm = resp4.equals("sim");
-
-                    if (respostaConfirm) {
-                        series = novaSerie;
-                        respostaConfirm = false;
-                        System.out.printf("\n- Edição realizada com sucesso -\n");
-                    } else {
-                        System.out.printf("\n- Edição de data cancelada -\n");
-                    }
-                break;
-
-                case 5:
-                    System.out.printf("\nInforme a modificação da necessidade de aqueciemento (Sim ou Não): ");
-                    String resposta1 = scanner.nextLine().trim().toLowerCase();
-                    boolean novoAqueciemnto = resposta1.equals("sim");
-
-                    System.out.printf("\nAntigo valor de nececidade de aquecimento " + (aqueciemnto ? "sim" : "não"));
-                    System.out.printf("\nNovo valor de nececidade de aquecimento: " + (novoAqueciemnto ? "sim" : "não"));
-                    System.out.printf("Confirmar modificação? (Sim : Não)");
-                    String resp5 = scanner.nextLine().trim().toLowerCase();
-                    respostaConfirm = resp5.equals("sim");
-
-                    if (respostaConfirm) {
-                        aqueciemnto = novoAqueciemnto;
-                        respostaConfirm = false;
-                        System.out.printf("\n- Edição realizada com sucesso -\n");
-                    } else {
-                        System.out.printf("\n- Edição de data cancelada -\n");
-                    }
-                break;
-
-                case 6:
-                    System.out.printf("\nInforme a nova anotação: ");
-                    String novaAnotacao = scanner.nextLine();
-                    System.out.printf("\nAntiga anotação: " + anotacao);
-                    System.out.printf("\nNova anotação: " + novaAnotacao);
-                    System.out.printf("Confirmar modificação? (Sim : Não)");
-                    String resp6 = scanner.nextLine().trim().toLowerCase();
-                    respostaConfirm = resp6.equals("sim");
-
-                    if (respostaConfirm) {
-                        anotacao = novaAnotacao;
-                        respostaConfirm = false;
-                        System.out.printf("\n- Edição realizada com sucesso -\n");
-                    } else {
-                        System.out.printf("\n- Edição de data cancelada -\n");
-                    }
-                break;
-
-                case 7:
-                    rodEdicao = false;
-                    System.out.printf("- Edição terminada -");
-                break;
-            
-                default:
-                    break;
-            }  
-        }
+    @Override
+    public String toString() {
+        return "Treino{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", dataHoraInicio=" + dataHoraInicio +
+                ", dataHoraFim=" + dataHoraFim +
+                ", usuarioId=" + usuarioId +
+                ", personalId=" + personalId +
+                '}';
     }
 }

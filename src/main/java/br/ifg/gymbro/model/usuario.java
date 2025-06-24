@@ -1,20 +1,45 @@
-package Classes;
+package br.ifg.gymbro.model;
 
-import java.util.Scanner;
-
-public class usuario{
+public class Usuario {
+    private Long id;
     private String nome;
     private String email;
-    private float peso;
+    private String senhaHash;
+    private Float peso;
 
-    public usuario(){
+    // Construtores
+    public Usuario() {}
 
-    }
-
-    public usuario(String nome, String email, float peso) {
+    public Usuario(String nome, String email, String senhaHash, Float peso) {
         this.nome = nome;
         this.email = email;
+        this.senhaHash = senhaHash;
         this.peso = peso;
+    }
+
+    public Usuario(Long id, String nome, String email, String senhaHash, Float peso) {
+        this.id = id;
+        this.nome = nome;
+        this.email = email;
+        this.senhaHash = senhaHash;
+        this.peso = peso;
+    }
+
+    // Construtor protegido para herança
+    protected Usuario(Long id, String nome, String email, String senhaHash) {
+        this.id = id;
+        this.nome = nome;
+        this.email = email;
+        this.senhaHash = senhaHash;
+    }
+
+    // Getters e Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getNome() {
@@ -33,26 +58,29 @@ public class usuario{
         this.email = email;
     }
 
-    public float getPeso() {
+    public String getSenhaHash() {
+        return senhaHash;
+    }
+
+    public void setSenhaHash(String senhaHash) {
+        this.senhaHash = senhaHash;
+    }
+
+    public Float getPeso() {
         return peso;
     }
 
-    public void setPeso(float peso) {
+    public void setPeso(Float peso) {
         this.peso = peso;
     }
 
-    public void CriarUsuario(Scanner scanner){
-        System.out.printf("Informe seu nome: ");
-        nome = scanner.nextLine();
-        System.out.printf("\nInforme seu email: ");
-        email = scanner.nextLine();
-        System.out.printf("\nInforme seu peso: ");
-        peso = scanner.nextFloat();
-    }
-
-    public void ExibirUsuarios(){
-        System.out.printf("Nome: " + nome + "\n");
-        System.out.printf("Email: " + email + "\n");
-        System.out.printf("Peso: " + peso + "\n\n");
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", email='" + email + '\'' +
+                ", peso=" + peso +
+                '}';
     }
 }

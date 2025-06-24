@@ -1,73 +1,108 @@
-package Classes;
+package br.ifg.gymbro.model;
 
-import java.util.Scanner;
-
-public class exercicios {
-    private String nomeExer;
+public class Exercicios {
+    private Long id;
+    private String nome;
     private String regiao;
     private String tipo;
-    private boolean unilateral;
+    private Boolean unilateral;
+    private Long equipamentoId;
+    
+    // Para exibição, vamos incluir o nome do equipamento
+    private String equipamentoNome;
 
-    public exercicios(){
+    // Construtores
+    public Exercicios() {}
 
-    }
-
-    public exercicios(String nomeExer, String regiao, String tipo, boolean unilateral){
-        this.nomeExer = nomeExer;
+    public Exercicios(String nome, String regiao, String tipo, Boolean unilateral, Long equipamentoId) {
+        this.nome = nome;
         this.regiao = regiao;
         this.tipo = tipo;
         this.unilateral = unilateral;
+        this.equipamentoId = equipamentoId;
     }
 
-    public String GetNomeExer(){
-        return nomeExer;
+    public Exercicios(Long id, String nome, String regiao, String tipo, Boolean unilateral, Long equipamentoId) {
+        this.id = id;
+        this.nome = nome;
+        this.regiao = regiao;
+        this.tipo = tipo;
+        this.unilateral = unilateral;
+        this.equipamentoId = equipamentoId;
     }
 
-     public void setNomeExer(String nomeExer){
-        this.nomeExer = nomeExer;
+    // Getters e Setters
+    public Long getId() {
+        return id;
     }
 
-    public String getRegiao(){
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getRegiao() {
         return regiao;
     }
 
-     public void setRegiao(String regiao){
+    public void setRegiao(String regiao) {
         this.regiao = regiao;
     }
 
-    public String GetTipo() {
+    public String getTipo() {
         return tipo;
     }
 
-    public void setTipo(String tipo){
+    public void setTipo(String tipo) {
         this.tipo = tipo;
     }
 
-    public boolean GetUnilateral(){
+    public Boolean getUnilateral() {
         return unilateral;
     }
 
-    public void setUnilateral(boolean unilateral){
+    public void setUnilateral(Boolean unilateral) {
         this.unilateral = unilateral;
     }
 
-    public void CadastrarExercicio(Scanner scanner){
-        System.out.printf("\nInforme o nome do exercicio: ");
-        nomeExer = scanner.nextLine();
-        System.out.printf("\nInforme a região trabalhada: ");
-        regiao = scanner.nextLine();
-        System.out.printf("\nInforme o tipo do exercicio: ");
-        tipo = scanner.nextLine();
-        System.out.printf("\nO exercicio e unilateral? (Sim : Não): ");
-        String resposta = scanner.nextLine().trim().toLowerCase();
-        unilateral = resposta.equals("sim");
+    public Long getEquipamentoId() {
+        return equipamentoId;
     }
 
-    public void ExibirExercicio(){
-        System.out.printf("\nNome do Exercicio: " + nomeExer);
-        System.out.printf("\nRegião Trabalhada: " + regiao);
-        System.out.printf("\nTipo do Exercicio: " + tipo);
-        System.out.printf("\nE unilateral: " + (unilateral ? "Sim" : "Não"));
-        System.out.printf("\nEquipamento do Exercicio: (Ainda a ver)\n\n");
+    public void setEquipamentoId(Long equipamentoId) {
+        this.equipamentoId = equipamentoId;
+    }
+
+    public String getEquipamentoNome() {
+        return equipamentoNome;
+    }
+
+    public void setEquipamentoNome(String equipamentoNome) {
+        this.equipamentoNome = equipamentoNome;
+    }
+
+    // Método para verificar se é unilateral
+    public boolean isUnilateral() {
+        return unilateral != null && unilateral;
+    }
+
+    @Override
+    public String toString() {
+        return "Exercicios{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", regiao='" + regiao + '\'' +
+                ", tipo='" + tipo + '\'' +
+                ", unilateral=" + unilateral +
+                ", equipamentoId=" + equipamentoId +
+                ", equipamentoNome='" + equipamentoNome + '\'' +
+                '}';
     }
 }

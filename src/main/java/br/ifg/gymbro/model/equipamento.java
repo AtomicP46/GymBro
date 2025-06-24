@@ -1,45 +1,55 @@
-package Classes;
+package br.ifg.gymbro.model;
 
-import java.util.Scanner;
+public class Equipamento {
+    private Long id;
+    private String nome;
+    private Float pesoEquip;
 
-public class equipamento {
-    private String nomeEqui;
-    private float pesoEqui;
+    // Construtores
+    public Equipamento() {}
 
-    public equipamento(){
-
+    public Equipamento(String nome, Float pesoEquip) {
+        this.nome = nome;
+        this.pesoEquip = pesoEquip;
     }
 
-    public equipamento(String nomeEqui, float pesoEqui){
-        this.nomeEqui = nomeEqui;
-        this.pesoEqui = pesoEqui;
+    public Equipamento(Long id, String nome, Float pesoEquip) {
+        this.id = id;
+        this.nome = nome;
+        this.pesoEquip = pesoEquip;
     }
 
-    public String GetNomeEqui(){
-        return nomeEqui;
+    // Getters e Setters
+    public Long getId() {
+        return id;
     }
 
-    public void setNomeEqui(String nomeEqui){
-        this.nomeEqui = nomeEqui;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public float GetPesoEqui(){
-        return pesoEqui;
+    public String getNome() {
+        return nome;
     }
 
-    public void setPesoEqui(float pesoEqui){
-        this.pesoEqui = pesoEqui;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
-    public void RegistrarEquipamento(Scanner scanner) {
-        System.out.printf("\nInforme o nome do equipamento: ");
-        nomeEqui = scanner.nextLine();
-        System.out.printf("\nInforme o peso do equipamento: ");
-        pesoEqui = scanner.nextFloat();
+    public Float getPesoEquip() {
+        return pesoEquip;
     }
 
-    public void ExibirEquipamento() {
-        System.out.printf("\nNome do Equipamento: " + nomeEqui);
-        System.out.printf("\nPeso do Equipamento: " + pesoEqui + "\n\n");
+    public void setPesoEquip(Float pesoEquip) {
+        this.pesoEquip = pesoEquip;
+    }
+
+    @Override
+    public String toString() {
+        return "Equipamento{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", pesoEquip=" + pesoEquip +
+                '}';
     }
 }

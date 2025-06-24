@@ -1,82 +1,56 @@
-package Classes;
+package br.ifg.gymbro.model;
 
-import java.util.Scanner;
+public class Personal extends Usuario {
+    private String licenca;
+    private Boolean formacao;
 
-public class personal {
-    private String nome;
-    private String email;
-    private boolean formaçãoEF;
-    private String licensa;
-
-    public personal(){
-
+    // Construtores
+    public Personal() {
+        super();
     }
 
-    public personal (String nome, String email, boolean formaçãoEF, String licensa){
-        this.nome = nome;
-        this.email = email;
-        this.formaçãoEF = formaçãoEF;
-        this.licensa = licensa;
-    }   
-
-    public String getNome() {
-        return nome;
+    public Personal(String nome, String email, String senhaHash, String licenca, Boolean formacao) {
+        super(nome, email, senhaHash, null); // Personal não tem peso
+        this.licenca = licenca;
+        this.formacao = formacao;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public Personal(Long id, String nome, String email, String senhaHash, String licenca, Boolean formacao) {
+        super(id, nome, email, senhaHash, null); // Personal não tem peso
+        this.licenca = licenca;
+        this.formacao = formacao;
     }
 
-    public String getEmail() {
-        return email;
+    // Getters e Setters específicos do Personal
+    public String getLicenca() {
+        return licenca;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setLicenca(String licenca) {
+        this.licenca = licenca;
     }
 
-    public boolean getFormaçãoEF(){
-        return formaçãoEF;
+    public Boolean getFormacao() {
+        return formacao;
     }
 
-    public void setFormacaoEF(boolean formaçãoEF){
-        this.formaçãoEF = formaçãoEF;
+    public void setFormacao(Boolean formacao) {
+        this.formacao = formacao;
     }
 
-    public String getLicensa() {
-        return licensa;
+    // Método para verificar se tem formação em EF
+    public boolean temFormacaoEF() {
+        return formacao != null && formacao;
     }
 
-    public void setLicenca(String licensa) {
-        this.licensa = licensa;
-    }
-
-    public void CriarPerfilPersonal(Scanner scanner){
-        System.out.printf("Informe seu nome: ");
-        nome = scanner.nextLine();
-        System.out.printf("Informe seu email: ");
-        email = scanner.nextLine();
-        System.out.printf("Possue informação em EF? (sim/não): ");
-        String resposta = scanner.nextLine().trim().toLowerCase();
-        formaçãoEF = resposta.equals("sim");
-
-        if (formaçãoEF) {
-            System.out.printf("Informe o numero do diploma:");
-            licensa = scanner.nextLine();
-        } else {
-            System.out.printf("Informe sua licença: ");
-            licensa = scanner.nextLine();
-        }
-    }
-
-    public void ExibirPerfilPersonal(){
-        System.out.printf("Nome: " + nome);
-        System.out.printf("\nEmail: " + email);
-        System.out.printf("\nFormação em EF: " + (formaçãoEF ? "Sim" : "Não"));
-        if (formaçãoEF) {
-            System.out.printf("\nNumero de diploma: " + licensa + "\n");
-        } else {
-            System.out.printf("\nLicença de personal: " + licensa + "\n\n");
-        }
+    @Override
+    public String toString() {
+        return "Personal{" +
+                "id=" + getId() +
+                ", nome='" + getNome() + '\'' +
+                ", email='" + getEmail() + '\'' +
+                ", licenca='" + licenca + '\'' +
+                ", formacao=" + formacao +
+                '}';
     }
 }

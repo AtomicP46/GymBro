@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import br.ifg.gymbro.dto.ExercicioProgressoDTO;
 import br.ifg.gymbro.model.TreinoExercicio;
 
 public class TreinoExercicioRepository {
@@ -187,5 +188,42 @@ public class TreinoExercicioRepository {
             return false;
         }
     }
-}
 
+    public List<ExercicioProgressoDTO> buscarHistoricoExercicioPorUsuario(Long usuarioId, Long exercicioId) throws SQLException {
+        String sql = "SELECT te.id as treino_exercicio_id, te.treino_id, te.exercicio_id, " +
+                     "te.series, te.repeticoes, te.peso_usado, te.anotacoes, te.aquecimento, " +
+                     "e.nome as exercicio_nome, " +
+                     "t.data_hora_inicio, t.data_hora_fim " +
+                     "FROM Treino_Exercicio te " +
+                     "JOIN Treinos t ON te.treino_id = t.id " +
+                     "JOIN Exercicios e ON te.exercicio_id = e.id " +
+                     "WHERE t.usuario_id = ? AND te.exercicio_id = ? " +
+                     "ORDER BY t.data_hora_inicio DESC";
+
+        List<ExercicioProgressoDTO> historico = new ArrayList<>();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, usuarioId);
+            stmt.setLong(2, exercicioId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                ExercicioProgressoDTO dto = new ExercicioProgressoDTO(
+                    rs.getLong("treino_exercicio_id"),
+                    rs.getLong("treino_id"),
+                    rs.getLong("exercicio_id"),
+                    rs.getString("exercicio_nome"),
+                    rs.getObject("series") != null ? rs.getInt("series") : null,
+                    rs.getObject("repeticoes") != null ? rs.getInt("repeticoes") : null,
+                    rs.getObject("peso_usado") != null ? rs.getFloat("peso_usado") : null,
+                    rs.getString("anotacoes"),
+                    rs.getBoolean("aquecimento"),
+                    rs.getTimestamp("data_hora_inicio") != null ? rs.getTimestamp("data_hora_inicio").toLocalDateTime() : null,
+                    rs.getTimestamp("data_hora_fim") != null ? rs.getTimestamp("data_hora_fim").toLocalDateTime() : null
+                );
+                historico.add(dto);
+            }
+        }
+        return historico;
+    }
+}

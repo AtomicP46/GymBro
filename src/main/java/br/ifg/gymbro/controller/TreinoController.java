@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+import br.ifg.gymbro.dto.ExercicioProgressoDTO;
 import br.ifg.gymbro.dto.TreinoDTO;
 import br.ifg.gymbro.dto.TreinoExercicioDTO;
 import br.ifg.gymbro.model.Exercicios;
@@ -22,12 +23,12 @@ import br.ifg.gymbro.services.TreinoService;
 import br.ifg.gymbro.services.UsuarioService;
 
 public class TreinoController {
-    private TreinoService treinoService;
-    private TreinoExercicioService treinoExercicioService;
-    private UsuarioService usuarioService;
-    private PersonalService personalService;
-    private ExerciciosService exerciciosService;
-    private Scanner scanner;
+    private final TreinoService treinoService;
+    private final TreinoExercicioService treinoExercicioService;
+    private final UsuarioService usuarioService;
+    private final PersonalService personalService;
+    private final ExerciciosService exerciciosService;
+    private final Scanner scanner;
 
     public TreinoController(TreinoService treinoService, TreinoExercicioService treinoExercicioService,
                            UsuarioService usuarioService, PersonalService personalService,
@@ -375,6 +376,58 @@ public class TreinoController {
         }
     }
 
+    /**
+     * Permite ao usuário gerar um relatório de progresso para um exercício específico.
+     */
+    public void gerarRelatorioProgressoExercicio() {
+        try {
+            System.out.println("=== RELATÓRIO DE PROGRESSO DE EXERCÍCIO ===");
+
+            // Selecionar usuário
+            Long usuarioId = selecionarUsuario();
+            if (usuarioId == null) return;
+
+            // Selecionar exercício
+            Long exercicioId = selecionarExercicio();
+            if (exercicioId == null) return;
+
+            // CORREÇÃO: Usar List<ExercicioProgressoDTO> em vez de List<TreinoExercicio>
+            List<ExercicioProgressoDTO> historico = treinoExercicioService.gerarRelatorioProgressoExercicio(usuarioId, exercicioId);
+
+            if (historico.isEmpty()) {
+                System.out.println("\nNenhum histórico encontrado para este exercício e usuário.\n");
+                return;
+            }
+
+            System.out.println("\n=== HISTÓRICO DE PROGRESSO PARA " + historico.get(0).getExercicioNome().toUpperCase() + " ===");
+            System.out.println("Usuário: " + usuarioService.buscarUsuarioPorId(usuarioId).map(Usuario::getNome).orElse("Desconhecido"));
+            System.out.println("---");
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            // CORREÇÃO: Usar ExercicioProgressoDTO em vez de TreinoExercicio
+            for (ExercicioProgressoDTO progresso : historico) {
+                System.out.println("Data do Treino: " + (progresso.getDataHoraInicioTreino() != null ? progresso.getDataHoraInicioTreino().format(formatter) : "N/A"));
+                System.out.println("Séries: " + (progresso.getSeries() != null ? progresso.getSeries() : "N/A"));
+                System.out.println("Repetições: " + (progresso.getRepeticoes() != null ? progresso.getRepeticoes() : "N/A"));
+                System.out.println("Peso Usado: " + (progresso.getPesoUsado() != null ? progresso.getPesoUsado() + " kg" : "N/A"));
+                if (progresso.getAnotacoes() != null && !progresso.getAnotacoes().trim().isEmpty()) {
+                    System.out.println("Anotações: " + progresso.getAnotacoes());
+                }
+                System.out.println("---");
+            }
+            System.out.println();
+
+        } catch (SQLException e) {
+            System.err.println("❌ Erro de banco de dados: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Erro de validação: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Erro inesperado: " + e.getMessage());
+            scanner.nextLine(); // limpar buffer em caso de erro
+        }
+    }
+
     private Long selecionarUsuario() {
         try {
             List<Usuario> usuarios = usuarioService.listarTodosUsuarios();
@@ -569,6 +622,7 @@ public class TreinoController {
             System.out.println("7. Registrar execução de exercício");
             System.out.println("8. Listar treinos em andamento");
             System.out.println("9. Excluir treino");
+            System.out.println("10. Gerar Relatório de Progresso de Exercício");
             System.out.println("0. Voltar ao menu anterior");
             System.out.print("Escolha uma opção: ");
 
@@ -603,6 +657,9 @@ public class TreinoController {
                         break;
                     case 9:
                         excluirTreino();
+                        break;
+                    case 10:
+                        gerarRelatorioProgressoExercicio();
                         break;
                     case 0:
                         executando = false;

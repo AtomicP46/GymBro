@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
+import br.ifg.gymbro.dto.ExercicioProgressoDTO;
 import br.ifg.gymbro.dto.TreinoExercicioDTO;
 import br.ifg.gymbro.model.TreinoExercicio;
 import br.ifg.gymbro.repository.ExerciciosRepository;
@@ -224,5 +225,16 @@ public class TreinoExercicioService {
 
         treinoExercicioRepository.atualizar(treinoExercicio);
         return treinoExercicioRepository.buscarPorId(id).orElse(treinoExercicio);
+    }
+
+    public List<ExercicioProgressoDTO> gerarRelatorioProgressoExercicio(Long usuarioId, Long exercicioId) throws SQLException, IllegalArgumentException {
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException("ID do usuário deve ser um número positivo");
+        }
+        if (exercicioId == null || exercicioId <= 0) {
+            throw new IllegalArgumentException("ID do exercício deve ser um número positivo");
+        }
+        
+        return treinoExercicioRepository.buscarHistoricoExercicioPorUsuario(usuarioId, exercicioId);
     }
 }

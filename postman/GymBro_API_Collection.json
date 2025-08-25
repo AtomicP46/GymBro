@@ -1,0 +1,123 @@
+{
+  "info": {
+    "name": "GymBro API",
+    "description": "Collection for testing GymBro Training System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Criar Usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"email\": \"joao@email.com\",\n  \"senha\": \"123456\",\n  \"dataNascimento\": \"1990-05-15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios"]
+            }
+          }
+        },
+        {
+          "name": "Listar Todos Usuarios",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Usuario por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Usuario por Email",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/email/joao@email.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "email", "joao@email.com"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Usuarios por Nome",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/buscar?nome=João",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "buscar"],
+              "query": [
+                {
+                  "key": "nome",
+                  "value": "João"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Usuario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva Santos\",\n  \"email\": \"joao.santos@email.com\",\n  \"senha\": \"novaSenha123\",\n  \"dataNascimento\": \"1990-05-15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Usuario",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    }
+  ]
+}

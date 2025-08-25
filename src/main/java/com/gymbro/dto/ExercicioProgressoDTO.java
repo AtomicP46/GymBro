@@ -1,9 +1,10 @@
 package com.gymbro.dto;
 
+import java.time.LocalDateTime;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import java.time.LocalDateTime;
 
 public class ExercicioProgressoDTO {
     @NotNull(message = "ID do treino exercício é obrigatório")

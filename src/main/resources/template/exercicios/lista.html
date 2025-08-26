@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercícios - GymBro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div th:replace="layout :: navbar"></div>
+    
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-running"></i> Lista de Exercícios</h2>
+                    <a href="/web/exercicios/novo" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Novo Exercício
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nome</th>
+                                        <th>Tipo</th>
+                                        <th>Grupo Muscular</th>
+                                        <th>Equipamento</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="exercicio : ${exercicios}">
+                                        <td th:text="${exercicio.id}"></td>
+                                        <td th:text="${exercicio.nome}"></td>
+                                        <td>
+                                            <span class="badge bg-info" th:text="${exercicio.tipo}"></span>
+                                        </td>
+                                        <td th:text="${exercicio.grupoMuscular}"></td>
+                                        <td th:text="${exercicio.equipamentoNome}"></td>
+                                        <td>
+                                            <a th:href="@{/web/exercicios/{id}(id=${exercicio.id})}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                            <form th:action="@{/web/exercicios/{id}/deletar(id=${exercicio.id})}" 
+                                                  method="post" style="display: inline;">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Tem certeza que deseja deletar este exercício?')">
+                                                    <i class="fas fa-trash"></i> Deletar
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div th:if="${#lists.isEmpty(exercicios)}" class="text-center py-4">
+                                <i class="fas fa-running fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Nenhum exercício cadastrado ainda.</p>
+                                <a href="/web/exercicios/novo" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> Cadastrar Primeiro Exercício
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

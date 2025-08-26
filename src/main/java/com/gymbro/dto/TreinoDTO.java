@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class TreinoDTO {
+    private Long id;
+
     @NotBlank(message = "Nome do treino é obrigatório")
     private String nome;
     
@@ -27,6 +29,14 @@ public class TreinoDTO {
         this.dataHoraInicio = dataHoraInicio;
         this.usuarioId = usuarioId;
         this.personalId = personalId;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     // Getters e Setters

@@ -14,8 +14,8 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <!-- Navbar Fragment -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" th:fragment="navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="/web/">
                 <i class="fas fa-dumbbell"></i> GymBro
@@ -38,6 +38,21 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/web/treinos">
                             <i class="fas fa-calendar-alt"></i> Treinos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/personais">
+                            <i class="fas fa-user-tie"></i> Personais
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/equipamentos">
+                            <i class="fas fa-tools"></i> Equipamentos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/web/planos">
+                            <i class="fas fa-clipboard-list"></i> Planos
                         </a>
                     </li>
                 </ul>

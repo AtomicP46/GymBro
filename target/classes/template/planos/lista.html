@@ -39,8 +39,9 @@
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit"></i> Editar
                                         </a>
+                                        <!-- Fixed undefined confirmarExclusao function call with inline confirm -->
                                         <button type="button" class="btn btn-sm btn-outline-danger ms-1"
-                                                onclick="confirmarExclusao('/web/planos/excluir/' + [[${plano.id}]])">
+                                                th:onclick="'if(confirm(\'Tem certeza que deseja excluir este plano?\')) { window.location.href=\'/web/planos/excluir/\' + ' + ${plano.id} + '; }'">
                                             <i class="fas fa-trash"></i> Excluir
                                         </button>
                                     </td>

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 
 public class ExercicioDTO {
 
+    private Long id;
+
     @NotBlank(message = "Nome do exercício é obrigatório")
     private String nome;
 
@@ -33,6 +35,14 @@ public class ExercicioDTO {
         this.tipo = tipo;
         this.unilateral = unilateral;
         this.equipamentoId = equipamentoId;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getNome() {

@@ -1,260 +1,419 @@
--- Script completo para criar o banco de dados Gymbro no PostgreSQL
--- Execute este script no seu PostgreSQL para criar todas as tabelas necessárias
+-- =====================================================
+-- SCRIPT DE CRIAÇÃO DO BANCO DE DADOS GYMBRO
+-- Sistema de Gerenciamento de Academia
+-- PostgreSQL + Docker
+-- =====================================================
 
--- Criar o banco de dados (execute separadamente se necessário)
--- CREATE DATABASE Gymbro;
+-- Criação do banco de dados
+CREATE DATABASE gymbro_db
+    WITH 
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'pt_BR.UTF-8'
+    LC_CTYPE = 'pt_BR.UTF-8'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1;
 
--- Conectar ao banco Gymbro antes de executar os comandos abaixo
--- \c Gymbro;
+-- Conectar ao banco criado
+\c gymbro_db;
 
 -- =====================================================
--- TABELA USER
+-- CRIAÇÃO DOS TIPOS ENUM
 -- =====================================================
-CREATE TABLE IF NOT EXISTS "User" (
-    id SERIAL PRIMARY KEY NOT NULL,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE NOT NULL,
-    senha VARCHAR(100) NOT NULL,
-    peso FLOAT
+
+-- Cria o novo enum regiao_corpo
+CREATE TYPE regiao_corpo AS ENUM (
+  'CARDIO',
+  'ABDOMEN',
+  'BICEPS',
+  'TRICEPS',
+  'PEITO',
+  'COSTAS',
+  'OMBRO',
+  'PERNAS'
 );
 
--- Índice para melhorar performance de busca por email
-CREATE INDEX IF NOT EXISTS idx_user_email ON "User"(email);
-
--- Comentários para documentação
-COMMENT ON TABLE "User" IS 'Tabela para armazenar informações dos usuários';
-COMMENT ON COLUMN "User".id IS 'Identificador único do usuário';
-COMMENT ON COLUMN "User".nome IS 'Nome completo do usuário';
-COMMENT ON COLUMN "User".email IS 'Email único do usuário para login';
-COMMENT ON COLUMN "User".senha IS 'Hash da senha do usuário (BCrypt)';
-COMMENT ON COLUMN "User".peso IS 'Peso do usuário em quilogramas';
-
--- =====================================================
--- TABELA PERSONAL
--- =====================================================
-CREATE TABLE IF NOT EXISTS Personal (
-    id SERIAL PRIMARY KEY NOT NULL,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE NOT NULL,
-    senha VARCHAR(100) NOT NULL,
-    licenca VARCHAR NOT NULL,
-    formacao BOOLEAN NOT NULL DEFAULT FALSE
+-- Cria o novo enum tipo_exercicio
+CREATE TYPE tipo_exercicio AS ENUM (
+  'FORCA_PESO_REPETICOES',
+  'FORCA_PESO_TEMPO',
+  'PESO_CORPO_COM_PESO_REPETICOES',
+  'PESO_CORPO_REPETICOES',
+  'PESO_CORPO_TEMPO',
+  'PESO_CORPO_ASSISTENCIA_REPETICOES',
+  'CARDIO_TEMPO_DISTANCIA_CALORIAS',
+  'OUTROS'
 );
 
--- Índices para melhorar performance
-CREATE INDEX IF NOT EXISTS idx_personal_email ON Personal(email);
-CREATE INDEX IF NOT EXISTS idx_personal_formacao ON Personal(formacao);
-
--- Comentários para documentação
-COMMENT ON TABLE Personal IS 'Tabela para armazenar informações dos personal trainers';
-COMMENT ON COLUMN Personal.id IS 'Identificador único do personal';
-COMMENT ON COLUMN Personal.nome IS 'Nome completo do personal';
-COMMENT ON COLUMN Personal.email IS 'Email único do personal para login';
-COMMENT ON COLUMN Personal.senha IS 'Hash da senha do personal (BCrypt)';
-COMMENT ON COLUMN Personal.licenca IS 'Número do diploma (se tem formação) ou licença de personal';
-COMMENT ON COLUMN Personal.formacao IS 'Indica se possui formação em Educação Física';
-
--- =====================================================
--- TABELA EQUIPAMENTO
--- =====================================================
-CREATE TABLE IF NOT EXISTS Equipamento (
-    id SERIAL PRIMARY KEY NOT NULL,
-    nome VARCHAR(100) NOT NULL,
-    pesoequip FLOAT
+-- Cria o novo enum tipo_criador
+CREATE TYPE tipo_criador AS ENUM (
+  'USUARIO',
+  'PERSONAL'
 );
 
--- Índices para melhorar performance
-CREATE INDEX IF NOT EXISTS idx_equipamento_nome ON Equipamento(nome);
-CREATE INDEX IF NOT EXISTS idx_equipamento_peso ON Equipamento(pesoequip);
-
--- Constraints para validação
-ALTER TABLE Equipamento ADD CONSTRAINT chk_nome_not_empty CHECK (LENGTH(TRIM(nome)) > 0);
-ALTER TABLE Equipamento ADD CONSTRAINT chk_peso_positivo CHECK (pesoequip IS NULL OR pesoequip >= 0);
-
--- Comentários para documentação
-COMMENT ON TABLE Equipamento IS 'Tabela para armazenar informações dos equipamentos da academia';
-COMMENT ON COLUMN Equipamento.id IS 'Identificador único do equipamento';
-COMMENT ON COLUMN Equipamento.nome IS 'Nome do equipamento';
-COMMENT ON COLUMN Equipamento.pesoequip IS 'Peso do equipamento em quilogramas (opcional)';
 
 -- =====================================================
--- TABELA EXERCICIOS
+-- CRIAÇÃO DAS TABELAS PRINCIPAIS
 -- =====================================================
-CREATE TABLE IF NOT EXISTS Exercicios (
-    id SERIAL PRIMARY KEY NOT NULL,
+
+-- Tabela de Alunos (herda de Usuario)
+CREATE TABLE alunos (
+    id BIGSERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    regiao VARCHAR(50) NOT NULL,
-    tipo VARCHAR(50) NOT NULL,
-    unilateral BOOLEAN NOT NULL DEFAULT FALSE,
-    equipamento_id INTEGER,
-    FOREIGN KEY (equipamento_id) REFERENCES Equipamento(id) ON DELETE SET NULL
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    peso DECIMAL(5,2) NOT NULL CHECK (peso > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Índices para melhorar performance
-CREATE INDEX IF NOT EXISTS idx_exercicios_nome ON Exercicios(nome);
-CREATE INDEX IF NOT EXISTS idx_exercicios_regiao ON Exercicios(regiao);
-CREATE INDEX IF NOT EXISTS idx_exercicios_tipo ON Exercicios(tipo);
-CREATE INDEX IF NOT EXISTS idx_exercicios_unilateral ON Exercicios(unilateral);
-CREATE INDEX IF NOT EXISTS idx_exercicios_equipamento ON Exercicios(equipamento_id);
+-- Tabela de Personal Trainers (herda de Usuario)
+CREATE TABLE personal (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    formado BOOLEAN NOT NULL DEFAULT FALSE,
+    codigo_validacao VARCHAR(50),
+    link_validacao VARCHAR(500),
+    licenca VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraint: licença obrigatória para não formados
+    CONSTRAINT chk_licenca_nao_formado 
+        CHECK (formado = TRUE OR (formado = FALSE AND licenca IS NOT NULL AND LENGTH(TRIM(licenca)) > 0))
+);
 
--- Constraints para validação
-ALTER TABLE Exercicios ADD CONSTRAINT chk_nome_exercicio_not_empty CHECK (LENGTH(TRIM(nome)) > 0);
-ALTER TABLE Exercicios ADD CONSTRAINT chk_regiao_not_empty CHECK (LENGTH(TRIM(regiao)) > 0);
-ALTER TABLE Exercicios ADD CONSTRAINT chk_tipo_not_empty CHECK (LENGTH(TRIM(tipo)) > 0);
+-- Tabela de Equipamentos
+CREATE TABLE equipamento (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    disponivel BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- Constraint para validar regiões permitidas
-ALTER TABLE Exercicios ADD CONSTRAINT chk_regiao_valida 
-CHECK (regiao IN ('Cardio', 'Abdomen', 'Biceps', 'Triceps', 'Peito', 'Costas', 'Ombro', 'Pernas'));
+-- Tabela de Exercícios
+CREATE TABLE exercicio (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    regiao regiao_corpo NOT NULL,
+    tipo tipo_exercicio NOT NULL,
+    unilateral BOOLEAN NOT NULL,
+    equipamento_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_exercicio_equipamento 
+        FOREIGN KEY (equipamento_id) REFERENCES equipamento(id) ON DELETE SET NULL
+);
 
--- Constraint para validar tipos permitidos
-ALTER TABLE Exercicios ADD CONSTRAINT chk_tipo_valido 
-CHECK (tipo IN (
-    'Força Peso e Repetições',
-    'Força Peso e Tempo',
-    'Peso do Corpo com Peso e Repetições',
-    'Peso do Corpo e Repetições',
-    'Peso do corpo e Tempo',
-    'Peso do corpo com assistência de peso e repetições',
-    'Cardio com tempo distância e Calorias ou Kcal',
-    'Outros'
-));
-
--- Comentários para documentação
-COMMENT ON TABLE Exercicios IS 'Tabela para armazenar informações dos exercícios da academia';
-COMMENT ON COLUMN Exercicios.id IS 'Identificador único do exercício';
-COMMENT ON COLUMN Exercicios.nome IS 'Nome do exercício';
-COMMENT ON COLUMN Exercicios.regiao IS 'Região do corpo trabalhada pelo exercício';
-COMMENT ON COLUMN Exercicios.tipo IS 'Tipo/categoria do exercício';
-COMMENT ON COLUMN Exercicios.unilateral IS 'Indica se o exercício é unilateral (true) ou bilateral (false)';
-COMMENT ON COLUMN Exercicios.equipamento_id IS 'ID do equipamento usado no exercício (opcional)';
-
--- =====================================================
--- TABELA TREINO
--- =====================================================
-CREATE TABLE IF NOT EXISTS Treino (
-    id SERIAL PRIMARY KEY NOT NULL,
+-- Tabela de Treinos
+CREATE TABLE treinos (
+    id BIGSERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     data_hora_inicio TIMESTAMP,
     data_hora_fim TIMESTAMP,
-    usuario_id INTEGER NOT NULL,
-    personal_id INTEGER,
-    FOREIGN KEY (usuario_id) REFERENCES "User"(id) ON DELETE CASCADE,
-    FOREIGN KEY (personal_id) REFERENCES Personal(id) ON DELETE SET NULL
+    usuario_id BIGINT NOT NULL,
+    personal_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints para relacionamentos
+    CONSTRAINT fk_treino_aluno 
+        FOREIGN KEY (usuario_id) REFERENCES alunos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_treino_personal 
+        FOREIGN KEY (personal_id) REFERENCES personal(id) ON DELETE SET NULL,
+    
+    -- Constraint: data fim deve ser posterior ao início
+    CONSTRAINT chk_data_fim_posterior 
+        CHECK (data_hora_fim IS NULL OR data_hora_fim > data_hora_inicio)
 );
 
--- Índices para melhorar performance
-CREATE INDEX IF NOT EXISTS idx_treino_usuario ON Treino(usuario_id);
-CREATE INDEX IF NOT EXISTS idx_treino_personal ON Treino(personal_id);
-CREATE INDEX IF NOT EXISTS idx_treino_data_inicio ON Treino(data_hora_inicio);
-CREATE INDEX IF NOT EXISTS idx_treino_data_fim ON Treino(data_hora_fim);
-
--- Constraints para validação
-ALTER TABLE Treino ADD CONSTRAINT chk_nome_treino_not_empty CHECK (LENGTH(TRIM(nome)) > 0);
-ALTER TABLE Treino ADD CONSTRAINT chk_data_fim_after_inicio 
-CHECK (data_hora_fim IS NULL OR data_hora_inicio IS NULL OR data_hora_fim >= data_hora_inicio);
-
--- Comentários para documentação
-COMMENT ON TABLE Treino IS 'Tabela para armazenar informações dos treinos realizados';
-COMMENT ON COLUMN Treino.id IS 'Identificador único do treino';
-COMMENT ON COLUMN Treino.nome IS 'Nome/descrição do treino';
-COMMENT ON COLUMN Treino.data_hora_inicio IS 'Data e hora de início do treino';
-COMMENT ON COLUMN Treino.data_hora_fim IS 'Data e hora de finalização do treino';
-COMMENT ON COLUMN Treino.usuario_id IS 'ID do usuário que realizou o treino';
-COMMENT ON COLUMN Treino.personal_id IS 'ID do personal que acompanhou o treino (opcional)';
-
--- =====================================================
--- TABELA TREINO_EXERCICIO
--- =====================================================
-CREATE TABLE IF NOT EXISTS Treino_Exercicio (
-    id SERIAL PRIMARY KEY NOT NULL,
-    treino_id INTEGER NOT NULL,
-    exercicio_id INTEGER NOT NULL,
-    series INTEGER,
-    repeticoes INTEGER,
-    peso_usado FLOAT,
+-- Tabela de Exercícios do Treino (relacionamento N:N)
+CREATE TABLE treino_exercicio (
+    id BIGSERIAL PRIMARY KEY,
+    treino_id BIGINT NOT NULL,
+    exercicio_id BIGINT NOT NULL,
+    series INTEGER CHECK (series > 0),
+    repeticoes INTEGER CHECK (repeticoes > 0),
+    peso_usado REAL CHECK (peso_usado >= 0),
     anotacoes TEXT,
-    aquecimento BOOLEAN NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (treino_id) REFERENCES Treino(id) ON DELETE CASCADE,
-    FOREIGN KEY (exercicio_id) REFERENCES Exercicios(id) ON DELETE CASCADE
+    aquecimento BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_treino_exercicio_treino 
+        FOREIGN KEY (treino_id) REFERENCES treinos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_treino_exercicio_exercicio 
+        FOREIGN KEY (exercicio_id) REFERENCES exercicio(id) ON DELETE CASCADE,
+    
+    -- Constraint única para evitar duplicatas
+    CONSTRAINT uk_treino_exercicio 
+        UNIQUE (treino_id, exercicio_id)
 );
 
--- Índices para melhorar performance
-CREATE INDEX IF NOT EXISTS idx_treino_exercicio_treino ON Treino_Exercicio(treino_id);
-CREATE INDEX IF NOT EXISTS idx_treino_exercicio_exercicio ON Treino_Exercicio(exercicio_id);
+-- Tabela de Planos de Treino
+CREATE TABLE plano (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    descricao VARCHAR(500) NOT NULL,
+    criador_id BIGINT NOT NULL,
+    tipo_criador tipo_criador NOT NULL,
+    publico BOOLEAN DEFAULT FALSE,
+    observacoes VARCHAR(1000),
+    data_criacao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- Constraints para validação
-ALTER TABLE Treino_Exercicio ADD CONSTRAINT chk_series_positivo 
-CHECK (series IS NULL OR series > 0);
-ALTER TABLE Treino_Exercicio ADD CONSTRAINT chk_repeticoes_positivo 
-CHECK (repeticoes IS NULL OR repeticoes > 0);
-ALTER TABLE Treino_Exercicio ADD CONSTRAINT chk_peso_positivo 
-CHECK (peso_usado IS NULL OR peso_usado >= 0);
-
--- Comentários para documentação
-COMMENT ON TABLE Treino_Exercicio IS 'Tabela para relacionar treinos com exercícios e suas execuções';
-COMMENT ON COLUMN Treino_Exercicio.id IS 'Identificador único da relação treino-exercício';
-COMMENT ON COLUMN Treino_Exercicio.treino_id IS 'ID do treino';
-COMMENT ON COLUMN Treino_Exercicio.exercicio_id IS 'ID do exercício realizado';
-COMMENT ON COLUMN Treino_Exercicio.series IS 'Número de séries planejadas/realizadas';
-COMMENT ON COLUMN Treino_Exercicio.repeticoes IS 'Número de repetições por série';
-COMMENT ON COLUMN Treino_Exercicio.peso_usado IS 'Peso utilizado no exercício (kg)';
-COMMENT ON COLUMN Treino_Exercicio.anotacoes IS 'Observações sobre a execução do exercício';
-COMMENT ON COLUMN Treino_Exercicio.aquecimento IS 'Indica se o exercício é de aquecimento';
-
--- =====================================================
--- DADOS DE EXEMPLO (OPCIONAL)
--- =====================================================
-
--- Inserir alguns equipamentos de exemplo
-INSERT INTO Equipamento (nome, pesoequip) VALUES 
-    ('Halteres 5kg', 5.0),
-    ('Halteres 10kg', 10.0),
-    ('Halteres 15kg', 15.0),
-    ('Halteres 20kg', 20.0),
-    ('Barra Olímpica', 20.0),
-    ('Kettlebell 16kg', 16.0),
-    ('Kettlebell 24kg', 24.0),
-    ('Esteira', NULL),
-    ('Bicicleta Ergométrica', NULL),
-    ('Banco Supino', 25.0),
-    ('Leg Press', 150.0),
-    ('Smith Machine', 200.0),
-    ('Cabo de Aço', NULL),
-    ('Elíptico', NULL),
-    ('Barra Fixa', NULL)
-ON CONFLICT DO NOTHING;
-
--- Inserir alguns exercícios de exemplo
-INSERT INTO Exercicios (nome, regiao, tipo, unilateral, equipamento_id) VALUES 
-    ('Supino Reto', 'Peito', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Barra Olímpica' LIMIT 1)),
-    ('Supino Inclinado com Halteres', 'Peito', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Halteres 15kg' LIMIT 1)),
-    ('Rosca Direta', 'Biceps', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Barra Olímpica' LIMIT 1)),
-    ('Rosca Martelo', 'Biceps', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Halteres 10kg' LIMIT 1)),
-    ('Rosca Concentrada', 'Biceps', 'Força Peso e Repetições', true, (SELECT id FROM Equipamento WHERE nome = 'Halteres 10kg' LIMIT 1)),
-    ('Tríceps Testa', 'Triceps', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Halteres 10kg' LIMIT 1)),
-    ('Tríceps Francês', 'Triceps', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Halteres 15kg' LIMIT 1)),
-    ('Desenvolvimento de Ombros', 'Ombro', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Halteres 10kg' LIMIT 1)),
-    ('Elevação Lateral', 'Ombro', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Halteres 5kg' LIMIT 1)),
-    ('Remada Curvada', 'Costas', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Barra Olímpica' LIMIT 1)),
-    ('Puxada na Barra Fixa', 'Costas', 'Peso do Corpo e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Barra Fixa' LIMIT 1)),
-    ('Agachamento Livre', 'Pernas', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Barra Olímpica' LIMIT 1)),
-    ('Leg Press', 'Pernas', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Leg Press' LIMIT 1)),
-    ('Agachamento Corpo Livre', 'Pernas', 'Peso do Corpo e Repetições', false, NULL),
-    ('Afundo', 'Pernas', 'Peso do Corpo e Repetições', true, NULL),
-    ('Prancha', 'Abdomen', 'Peso do corpo e Tempo', false, NULL),
-    ('Abdominal Supra', 'Abdomen', 'Peso do Corpo e Repetições', false, NULL),
-    ('Corrida', 'Cardio', 'Cardio com tempo distância e Calorias ou Kcal', false, (SELECT id FROM Equipamento WHERE nome = 'Esteira' LIMIT 1)),
-    ('Bicicleta', 'Cardio', 'Cardio com tempo distância e Calorias ou Kcal', false, (SELECT id FROM Equipamento WHERE nome = 'Bicicleta Ergométrica' LIMIT 1)),
-    ('Swing com Kettlebell', 'Pernas', 'Força Peso e Repetições', false, (SELECT id FROM Equipamento WHERE nome = 'Kettlebell 16kg' LIMIT 1))
-ON CONFLICT DO NOTHING;
+-- Tabela de Exercícios do Plano (relacionamento N:N)
+CREATE TABLE plano_exercicio (
+    id BIGSERIAL PRIMARY KEY,
+    plano_id BIGINT NOT NULL,
+    exercicio_id BIGINT NOT NULL,
+    series INTEGER CHECK (series > 0),
+    repeticoes INTEGER CHECK (repeticoes > 0),
+    peso_sugerido REAL CHECK (peso_sugerido >= 0),
+    observacoes TEXT,
+    ordem INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_plano_exercicio_plano 
+        FOREIGN KEY (plano_id) REFERENCES plano(id) ON DELETE CASCADE,
+    CONSTRAINT fk_plano_exercicio_exercicio 
+        FOREIGN KEY (exercicio_id) REFERENCES exercicio(id) ON DELETE CASCADE,
+    
+    -- Constraint única para evitar duplicatas
+    CONSTRAINT uk_plano_exercicio 
+        UNIQUE (plano_id, exercicio_id)
+);
 
 -- =====================================================
--- MENSAGEM DE SUCESSO
+-- CRIAÇÃO DOS ÍNDICES PARA PERFORMANCE
 -- =====================================================
-DO $$
+
+-- Índices para tabela alunos
+CREATE INDEX idx_alunos_email ON alunos(email);
+CREATE INDEX idx_alunos_nome ON alunos(nome);
+
+-- Índices para tabela personal
+CREATE INDEX idx_personal_email ON personal(email);
+CREATE INDEX idx_personal_nome ON personal(nome);
+CREATE INDEX idx_personal_formado ON personal(formado);
+
+-- Índices para tabela exercicio
+CREATE INDEX idx_exercicio_nome ON exercicio(nome);
+CREATE INDEX idx_exercicio_regiao ON exercicio(regiao);
+CREATE INDEX idx_exercicio_tipo ON exercicio(tipo);
+CREATE INDEX idx_exercicio_equipamento ON exercicio(equipamento_id);
+
+-- Índices para tabela treinos
+CREATE INDEX idx_treinos_usuario ON treinos(usuario_id);
+CREATE INDEX idx_treinos_personal ON treinos(personal_id);
+CREATE INDEX idx_treinos_data_inicio ON treinos(data_hora_inicio);
+
+-- Índices para tabela treino_exercicio
+CREATE INDEX idx_treino_exercicio_treino ON treino_exercicio(treino_id);
+CREATE INDEX idx_treino_exercicio_exercicio ON treino_exercicio(exercicio_id);
+
+-- Índices para tabela plano
+CREATE INDEX idx_plano_criador ON plano(criador_id, tipo_criador);
+CREATE INDEX idx_plano_publico ON plano(publico);
+CREATE INDEX idx_plano_data_criacao ON plano(data_criacao);
+
+-- Índices para tabela plano_exercicio
+CREATE INDEX idx_plano_exercicio_plano ON plano_exercicio(plano_id);
+CREATE INDEX idx_plano_exercicio_exercicio ON plano_exercicio(exercicio_id);
+
+-- =====================================================
+-- TRIGGERS PARA ATUALIZAÇÃO AUTOMÁTICA DE TIMESTAMPS
+-- =====================================================
+
+-- Função para atualizar updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
 BEGIN
-    RAISE NOTICE '✅ Banco de dados Gymbro criado com sucesso!';
-    RAISE NOTICE '📊 Tabelas criadas: User, Personal, Equipamento, Exercicios, Treino, Treino_Exercicio';
-    RAISE NOTICE '🏋️ Dados de exemplo inseridos para equipamentos e exercícios';
-    RAISE NOTICE '🚀 Sistema pronto para uso!';
-END $$;
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Aplicar trigger em todas as tabelas relevantes
+CREATE TRIGGER update_alunos_updated_at BEFORE UPDATE ON alunos 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_personal_updated_at BEFORE UPDATE ON personal 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_equipamento_updated_at BEFORE UPDATE ON equipamento 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_exercicio_updated_at BEFORE UPDATE ON exercicio 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_treinos_updated_at BEFORE UPDATE ON treinos 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_plano_updated_at BEFORE UPDATE ON plano 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- INSERÇÃO DE DADOS INICIAIS (SEEDS)
+-- =====================================================
+
+-- Equipamentos básicos
+INSERT INTO equipamento (nome, descricao, disponivel) VALUES
+('Halteres', 'Conjunto de halteres de diversos pesos', true),
+('Barra Olímpica', 'Barra padrão olímpica 20kg', true),
+('Esteira', 'Esteira elétrica para corrida', true),
+('Bicicleta Ergométrica', 'Bicicleta para exercícios cardiovasculares', true),
+('Banco Reto', 'Banco para exercícios de supino', true),
+('Banco Inclinado', 'Banco ajustável para exercícios inclinados', true),
+('Cabo de Aço', 'Sistema de cabos e polias', true),
+('Leg Press', 'Máquina para exercícios de pernas', true),
+('Smith Machine', 'Máquina Smith para exercícios guiados', true),
+('Peso Corporal', 'Exercícios usando apenas o peso do corpo', true);
+
+-- Exercícios básicos por região
+INSERT INTO exercicio (nome, regiao, tipo, unilateral, equipamento_id) VALUES
+-- Cardio
+('Corrida na Esteira', 'CARDIO', 'CARDIO', false, 3),
+('Bicicleta Ergométrica', 'CARDIO', 'CARDIO', false, 4),
+('Burpees', 'CARDIO', 'CARDIO', false, 10),
+
+-- Peito
+('Supino Reto', 'PEITO', 'FORCA', false, 2),
+('Supino Inclinado', 'PEITO', 'FORCA', false, 2),
+('Flexão de Braço', 'PEITO', 'FORCA', false, 10),
+('Crucifixo com Halteres', 'PEITO', 'FORCA', false, 1),
+
+-- Costas
+('Puxada na Polia', 'COSTAS', 'FORCA', false, 7),
+('Remada Curvada', 'COSTAS', 'FORCA', false, 2),
+('Barra Fixa', 'COSTAS', 'FORCA', false, 10),
+
+-- Pernas
+('Agachamento', 'PERNAS', 'FORCA', false, 2),
+('Leg Press', 'PERNAS', 'FORCA', false, 8),
+('Afundo', 'PERNAS', 'FORCA', true, 1),
+('Extensão de Pernas', 'PERNAS', 'FORCA', false, 8),
+
+-- Ombros
+('Desenvolvimento com Halteres', 'OMBRO', 'FORCA', false, 1),
+('Elevação Lateral', 'OMBRO', 'FORCA', false, 1),
+('Elevação Frontal', 'OMBRO', 'FORCA', false, 1),
+
+-- Bíceps
+('Rosca Direta', 'BICEPS', 'FORCA', false, 1),
+('Rosca Martelo', 'BICEPS', 'FORCA', false, 1),
+('Rosca na Polia', 'BICEPS', 'FORCA', false, 7),
+
+-- Tríceps
+('Tríceps Testa', 'TRICEPS', 'FORCA', false, 1),
+('Tríceps na Polia', 'TRICEPS', 'FORCA', false, 7),
+('Mergulho', 'TRICEPS', 'FORCA', false, 10),
+
+-- Abdômen
+('Abdominal Tradicional', 'ABDOMEN', 'FORCA', false, 10),
+('Prancha', 'ABDOMEN', 'RESISTENCIA', false, 10),
+('Abdominal Oblíquo', 'ABDOMEN', 'FORCA', false, 10);
+
+-- Personal Trainer de exemplo
+INSERT INTO personal (nome, email, senha_hash, data_nascimento, formado, licenca) VALUES
+('João Silva', 'joao.personal@gymbro.com', '$2a$10$example.hash.here', '1985-03-15', true, 'CREF-123456');
+
+-- Aluno de exemplo
+INSERT INTO alunos (nome, email, senha_hash, data_nascimento, peso) VALUES
+('Maria Santos', 'maria.aluna@gymbro.com', '$2a$10$example.hash.here', '1990-07-20', 65.5);
+
+-- Plano de treino exemplo
+INSERT INTO plano (nome, descricao, criador_id, tipo_criador, publico, observacoes) VALUES
+('Treino Iniciante - Corpo Todo', 'Plano básico para iniciantes focado em todos os grupos musculares', 1, 'PERSONAL', true, 'Ideal para quem está começando na academia');
+
+-- Exercícios do plano exemplo
+INSERT INTO plano_exercicio (plano_id, exercicio_id, series, repeticoes, peso_sugerido, ordem) VALUES
+(1, 6, 3, 12, 0, 1),    -- Flexão de Braço
+(1, 11, 3, 10, 0, 2),   -- Barra Fixa
+(1, 12, 3, 15, 0, 3),   -- Agachamento
+(1, 15, 3, 12, 5, 4),   -- Desenvolvimento com Halteres
+(1, 18, 3, 12, 8, 5),   -- Rosca Direta
+(1, 24, 3, 15, 0, 6);   -- Abdominal Tradicional
+
+-- =====================================================
+-- VIEWS ÚTEIS PARA CONSULTAS
+-- =====================================================
+
+-- View para listar exercícios com equipamentos
+CREATE VIEW v_exercicios_completos AS
+SELECT 
+    e.id,
+    e.nome,
+    e.regiao,
+    e.tipo,
+    e.unilateral,
+    eq.nome as equipamento_nome,
+    eq.disponivel as equipamento_disponivel
+FROM exercicio e
+LEFT JOIN equipamento eq ON e.equipamento_id = eq.id;
+
+-- View para treinos com informações do usuário
+CREATE VIEW v_treinos_completos AS
+SELECT 
+    t.id,
+    t.nome,
+    t.data_hora_inicio,
+    t.data_hora_fim,
+    a.nome as aluno_nome,
+    a.email as aluno_email,
+    p.nome as personal_nome,
+    CASE 
+        WHEN t.data_hora_fim IS NOT NULL THEN 'FINALIZADO'
+        WHEN t.data_hora_inicio IS NOT NULL THEN 'EM_ANDAMENTO'
+        ELSE 'AGENDADO'
+    END as status
+FROM treinos t
+JOIN alunos a ON t.usuario_id = a.id
+LEFT JOIN personal p ON t.personal_id = p.id;
+
+-- =====================================================
+-- COMENTÁRIOS NAS TABELAS
+-- =====================================================
+
+COMMENT ON DATABASE gymbro_db IS 'Sistema de Gerenciamento de Academia GymBro';
+
+COMMENT ON TABLE alunos IS 'Tabela de alunos da academia';
+COMMENT ON TABLE personal IS 'Tabela de personal trainers';
+COMMENT ON TABLE equipamento IS 'Tabela de equipamentos da academia';
+COMMENT ON TABLE exercicio IS 'Tabela de exercícios disponíveis';
+COMMENT ON TABLE treinos IS 'Tabela de treinos realizados pelos alunos';
+COMMENT ON TABLE treino_exercicio IS 'Relacionamento entre treinos e exercícios';
+COMMENT ON TABLE plano IS 'Tabela de planos de treino';
+COMMENT ON TABLE plano_exercicio IS 'Relacionamento entre planos e exercícios';
+
+-- =====================================================
+-- SCRIPT CONCLUÍDO
+-- =====================================================
+
+-- Verificar se todas as tabelas foram criadas
+SELECT 
+    schemaname,
+    tablename,
+    tableowner
+FROM pg_tables 
+WHERE schemaname = 'public'
+ORDER BY tablename;
+
+-- Verificar se todos os índices foram criados
+SELECT 
+    indexname,
+    tablename,
+    indexdef
+FROM pg_indexes 
+WHERE schemaname = 'public'
+ORDER BY tablename, indexname;
+
+COMMIT;

@@ -6,6 +6,7 @@ com\gymbro\model\Plano.class
 com\gymbro\enums\TipoExercicio.class
 com\gymbro\service\TreinoExercicioService.class
 com\gymbro\model\Personal.class
+com\gymbro\controller\WebController.class
 com\gymbro\repository\PlanoExercicioRepository.class
 com\gymbro\repository\PlanoRepository.class
 com\gymbro\dto\AlunoDTO.class

@@ -42,7 +42,7 @@
                                             <i class="fas fa-edit"></i> Editar
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-danger ms-1"
-                                                onclick="confirmarExclusao('/web/equipamentos/excluir/' + [[${equipamento.id}]])">
+                                                th:onclick="'if(confirm(\'Tem certeza que deseja excluir este equipamento?\')) { window.location.href=\'/web/equipamentos/excluir/\' + ' + ${equipamento.id} + '; }'">
                                             <i class="fas fa-trash"></i> Excluir
                                         </button>
                                     </td>

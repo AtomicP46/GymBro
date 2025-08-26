@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class PlanoDTO {
+    private Long id;
+    
     @NotBlank(message = "Nome do plano é obrigatório")
     private String nome;
     
@@ -22,6 +24,8 @@ public class PlanoDTO {
     
     private String observacoes;
 
+    private Long personalId;
+
     // Construtores
     public PlanoDTO() {}
 
@@ -35,6 +39,14 @@ public class PlanoDTO {
     }
 
     // Getters e Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getNome() {
         return nome;
     }
@@ -81,5 +93,13 @@ public class PlanoDTO {
 
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
+    }
+
+    public Long getPersonalId() {
+        return personalId;
+    }
+
+    public void setPersonalId(Long personalId) {
+        this.personalId = personalId;
     }
 }

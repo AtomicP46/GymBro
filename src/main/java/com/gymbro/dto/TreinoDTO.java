@@ -9,6 +9,8 @@ public class TreinoDTO {
     @NotBlank(message = "Nome do treino é obrigatório")
     private String nome;
     
+    private String descricao;
+    
     private LocalDateTime dataHoraInicio;
     private LocalDateTime dataHoraFim;
     
@@ -34,6 +36,14 @@ public class TreinoDTO {
 
     public void setNome(String nome) {
         this.nome = nome;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
     }
 
     public LocalDateTime getDataHoraInicio() {

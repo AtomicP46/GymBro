@@ -1,6 +1,8 @@
 package com.gymbro.service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,64 +25,48 @@ public class EquipamentoService {
     }
 
     public EquipamentoDTO criarEquipamento(EquipamentoDTO dto) {
-        if (repository.existsByNomeIgnoreCase(dto.getNome())) {
-            throw new IllegalArgumentException("Já existe um equipamento com este nome");
-        }
-        Equipamento equipamento = dto.toEntity();
-        Equipamento salvo = repository.save(equipamento);
-        return EquipamentoDTO.fromEntity(salvo);
+        validarNomeUnico(dto.getNome());
+        
+        return Optional.of(dto)
+                .map(EquipamentoDTO::toEntity)
+                .map(repository::save)
+                .map(EquipamentoDTO::fromEntity)
+                .orElseThrow(() -> new IllegalStateException("Erro ao criar equipamento"));
     }
 
     @Transactional(readOnly = true)
     public EquipamentoDTO buscarPorId(Long id) {
-        Equipamento equipamento = repository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
-        return EquipamentoDTO.fromEntity(equipamento);
+        return repository.findById(id)
+                .map(EquipamentoDTO::fromEntity)
+                .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
     }
 
     @Transactional(readOnly = true)
     public List<EquipamentoDTO> listarTodos() {
         return repository.findAll()
-            .stream()
-            .map(EquipamentoDTO::fromEntity)
-            .collect(Collectors.toList());
+                .stream()
+                .map(EquipamentoDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<EquipamentoDTO> buscarPorNome(String nome) {
-        if (nome == null || nome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome para busca não pode estar vazio");
-        }
-        return repository
-            .findByNomeContainingIgnoreCaseOrderByNome(nome.trim())
-            .stream()
-            .map(EquipamentoDTO::fromEntity)
-            .collect(Collectors.toList());
+        return Optional.ofNullable(nome)
+                .filter(n -> !n.trim().isEmpty())
+                .map(String::trim)
+                .map(repository::findByNomeContainingIgnoreCaseOrderByNome)
+                .orElseThrow(() -> new IllegalArgumentException("Nome para busca não pode estar vazio"))
+                .stream()
+                .map(EquipamentoDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
     public EquipamentoDTO atualizarEquipamento(Long id, EquipamentoDTO dto) {
-        Equipamento equipamento = repository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
-
-        String novoNome = dto.getNome();
-        if (novoNome != null && !novoNome.trim().isEmpty() 
-            && !novoNome.equalsIgnoreCase(equipamento.getNome())) {
-            String trimmed = novoNome.trim();
-            if (repository.existsByNomeIgnoreCaseAndIdNot(trimmed, id)) {
-                throw new IllegalArgumentException("Já existe outro equipamento com este nome");
-            }
-            equipamento.setNome(trimmed);
-        }
-
-        if (dto.getPesoEquip() != null) {
-            if (dto.getPesoEquip() < 0) {
-                throw new IllegalArgumentException("Peso do equipamento não pode ser negativo");
-            }
-            equipamento.setPesoEquip(dto.getPesoEquip());
-        }
-
-        Equipamento atualizado = repository.save(equipamento);
-        return EquipamentoDTO.fromEntity(atualizado);
+        return repository.findById(id)
+                .map(equipamento -> atualizarDadosEquipamento(equipamento, dto))
+                .map(repository::save)
+                .map(EquipamentoDTO::fromEntity)
+                .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
     }
 
     public void deletarEquipamento(Long id) {
@@ -92,20 +78,21 @@ public class EquipamentoService {
 
     @Transactional(readOnly = true)
     public List<EquipamentoDTO> buscarPorFaixaPeso(Float pesoMin, Float pesoMax) {
-        if (pesoMin == null || pesoMax == null) {
-            throw new IllegalArgumentException("Peso mínimo e máximo são obrigatórios");
-        }
-        if (pesoMin < 0 || pesoMax < 0) {
-            throw new IllegalArgumentException("Pesos não podem ser negativos");
-        }
-        if (pesoMin > pesoMax) {
-            throw new IllegalArgumentException("Peso mínimo não pode ser maior que o peso máximo");
-        }
-        return repository
-            .findByPesoEquipBetweenOrderByPesoEquip(pesoMin, pesoMax)
-            .stream()
-            .map(EquipamentoDTO::fromEntity)
-            .collect(Collectors.toList());
+        validarFaixaPeso(pesoMin, pesoMax);
+        
+        return repository.findByPesoEquipBetweenOrderByPesoEquip(pesoMin, pesoMax)
+                .stream()
+                .map(EquipamentoDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<EquipamentoDTO> buscarPorCriterio(Predicate<Equipamento> criterio) {
+        return repository.findAll()
+                .stream()
+                .filter(criterio)
+                .map(EquipamentoDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +102,52 @@ public class EquipamentoService {
 
     @Transactional(readOnly = true)
     public boolean existeEquipamento(Long id) {
-        return id != null && repository.existsById(id);
+        return Optional.ofNullable(id)
+                .map(repository::existsById)
+                .orElse(false);
+    }
+
+    private void validarNomeUnico(String nome) {
+        if (repository.existsByNomeIgnoreCase(nome)) {
+            throw new IllegalArgumentException("Já existe um equipamento com este nome");
+        }
+    }
+
+    private void validarFaixaPeso(Float pesoMin, Float pesoMax) {
+        if (pesoMin == null || pesoMax == null) {
+            throw new IllegalArgumentException("Peso mínimo e máximo são obrigatórios");
+        }
+        if (pesoMin < 0 || pesoMax < 0) {
+            throw new IllegalArgumentException("Pesos não podem ser negativos");
+        }
+        if (pesoMin > pesoMax) {
+            throw new IllegalArgumentException("Peso mínimo não pode ser maior que o peso máximo");
+        }
+    }
+
+    private Equipamento atualizarDadosEquipamento(Equipamento equipamento, EquipamentoDTO dto) {
+        Optional.ofNullable(dto.getNome())
+                .filter(nome -> !nome.trim().isEmpty())
+                .map(String::trim)
+                .filter(nome -> !nome.equalsIgnoreCase(equipamento.getNome()))
+                .ifPresent(nome -> {
+                    if (repository.existsByNomeIgnoreCaseAndIdNot(nome, equipamento.getId())) {
+                        throw new IllegalArgumentException("Já existe outro equipamento com este nome");
+                    }
+                    equipamento.setNome(nome);
+                });
+
+        Optional.ofNullable(dto.getPesoEquip())
+                .filter(peso -> peso >= 0)
+                .ifPresentOrElse(
+                    equipamento::setPesoEquip,
+                    () -> {
+                        if (dto.getPesoEquip() != null && dto.getPesoEquip() < 0) {
+                            throw new IllegalArgumentException("Peso do equipamento não pode ser negativo");
+                        }
+                    }
+                );
+
+        return equipamento;
     }
 }

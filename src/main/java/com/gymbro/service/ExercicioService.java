@@ -1,6 +1,9 @@
 package com.gymbro.service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,53 +32,22 @@ public class ExercicioService {
 
     @Transactional
     public Exercicio criarExercicio(ExercicioDTO dto) {
-        // Validações básicas
-        if (dto.getNome() == null || dto.getNome().trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome do exercício é obrigatório");
-        }
-        if (dto.getRegiao() == null || dto.getRegiao().trim().isEmpty()) {
-            throw new IllegalArgumentException("Região do exercício é obrigatória");
-        }
-        if (dto.getTipo() == null || dto.getTipo().trim().isEmpty()) {
-            throw new IllegalArgumentException("Tipo do exercício é obrigatório");
-        }
-        if (dto.getUnilateral() == null) {
-            throw new IllegalArgumentException("Indicação de unilateralidade é obrigatória");
-        }
-
-        // Conversão para enums e validação
-        RegiaoCorpo regiaoEnum = RegiaoCorpo.fromString(dto.getRegiao().trim());
-        TipoExercicio tipoEnum = TipoExercicio.fromString(dto.getTipo().trim());
-
-        // Verifica duplicidade de nome
-        if (exercicioRepository.existsByNomeIgnoreCase(dto.getNome().trim())) {
-            throw new IllegalArgumentException("Já existe um exercício com este nome");
-        }
-
-        // Busca e associa equipamento (opcional)
-        Equipamento equipamento = null;
-        if (dto.getEquipamentoId() != null) {
-            equipamento = equipamentoRepository.findById(dto.getEquipamentoId())
-                .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
-        }
-
-        Exercicio exercicio = new Exercicio(
-            dto.getNome().trim(),
-            regiaoEnum,
-            tipoEnum,
-            dto.getUnilateral(),
-            equipamento
-        );
-        return exercicioRepository.save(exercicio);
+        validarDadosObrigatorios(dto);
+        validarNomeUnico(dto.getNome().trim());
+        
+        return Optional.of(dto)
+                .map(this::construirExercicio)
+                .map(exercicioRepository::save)
+                .orElseThrow(() -> new IllegalStateException("Erro ao criar exercício"));
     }
 
     @Transactional(readOnly = true)
     public Exercicio buscarPorId(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("ID deve ser positivo");
-        }
-        return exercicioRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Exercício não encontrado"));
+        return Optional.ofNullable(id)
+                .filter(i -> i > 0)
+                .flatMap(exercicioRepository::findById)
+                .orElseThrow(() -> new IllegalArgumentException(
+                    id == null || id <= 0 ? "ID deve ser positivo" : "Exercício não encontrado"));
     }
 
     @Transactional(readOnly = true)
@@ -85,90 +57,65 @@ public class ExercicioService {
 
     @Transactional(readOnly = true)
     public List<Exercicio> buscarPorNome(String nome) {
-        if (nome == null || nome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome para busca não pode estar vazio");
-        }
-        return exercicioRepository.findByNomeContainingIgnoreCaseOrderByNome(nome.trim());
+        return Optional.ofNullable(nome)
+                .filter(n -> !n.trim().isEmpty())
+                .map(String::trim)
+                .map(exercicioRepository::findByNomeContainingIgnoreCaseOrderByNome)
+                .orElseThrow(() -> new IllegalArgumentException("Nome para busca não pode estar vazio"));
     }
 
     @Transactional(readOnly = true)
     public List<Exercicio> buscarPorRegiao(String regiao) {
-        if (regiao == null || regiao.trim().isEmpty()) {
-            throw new IllegalArgumentException("Região para busca não pode estar vazia");
-        }
-        RegiaoCorpo regiaoEnum = RegiaoCorpo.fromString(regiao.trim());
-        return exercicioRepository.findByRegiaoOrderByNome(regiaoEnum);
+        return Optional.ofNullable(regiao)
+                .filter(r -> !r.trim().isEmpty())
+                .map(String::trim)
+                .map(RegiaoCorpo::fromString)
+                .map(exercicioRepository::findByRegiaoOrderByNome)
+                .orElseThrow(() -> new IllegalArgumentException("Região para busca não pode estar vazia"));
     }
 
     @Transactional(readOnly = true)
     public List<Exercicio> buscarPorTipo(String tipo) {
-        if (tipo == null || tipo.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tipo para busca não pode estar vazio");
-        }
-        TipoExercicio tipoEnum = TipoExercicio.fromString(tipo.trim());
-        return exercicioRepository.findByTipoOrderByNome(tipoEnum);
+        return Optional.ofNullable(tipo)
+                .filter(t -> !t.trim().isEmpty())
+                .map(String::trim)
+                .map(TipoExercicio::fromString)
+                .map(exercicioRepository::findByTipoOrderByNome)
+                .orElseThrow(() -> new IllegalArgumentException("Tipo para busca não pode estar vazio"));
     }
 
     @Transactional(readOnly = true)
     public List<Exercicio> buscarPorEquipamento(Long equipamentoId) {
-        if (equipamentoId == null || equipamentoId <= 0) {
-            throw new IllegalArgumentException("ID do equipamento deve ser positivo");
-        }
-        equipamentoRepository.findById(equipamentoId)
-            .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
-        return exercicioRepository.findByEquipamentoIdOrderByNome(equipamentoId);
+        return Optional.ofNullable(equipamentoId)
+                .filter(id -> id > 0)
+                .map(id -> {
+                    equipamentoRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
+                    return exercicioRepository.findByEquipamentoIdOrderByNome(id);
+                })
+                .orElseThrow(() -> new IllegalArgumentException("ID do equipamento deve ser positivo"));
     }
 
     @Transactional(readOnly = true)
     public List<Exercicio> buscarPorUnilateral(Boolean unilateral) {
-        if (unilateral == null) {
-            throw new IllegalArgumentException("Parâmetro unilateral é obrigatório");
-        }
-        return exercicioRepository.findByUnilateralOrderByNome(unilateral);
+        return Optional.ofNullable(unilateral)
+                .map(exercicioRepository::findByUnilateralOrderByNome)
+                .orElseThrow(() -> new IllegalArgumentException("Parâmetro unilateral é obrigatório"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Exercicio> buscarPorCriterio(Predicate<Exercicio> criterio) {
+        return exercicioRepository.findAll().stream()
+                .filter(criterio)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public Exercicio atualizarExercicio(Long id, ExercicioDTO dto) {
-        Exercicio exercicio = buscarPorId(id);
-
-        // Atualiza nome
-        if (dto.getNome() != null && !dto.getNome().trim().isEmpty()) {
-            String novoNome = dto.getNome().trim();
-            if (exercicioRepository.existsByNomeIgnoreCaseAndIdNot(novoNome, id)) {
-                throw new IllegalArgumentException("Já existe outro exercício com este nome");
-            }
-            exercicio.setNome(novoNome);
-        }
-
-        // Atualiza região
-        if (dto.getRegiao() != null && !dto.getRegiao().trim().isEmpty()) {
-            RegiaoCorpo novaRegiao = RegiaoCorpo.fromString(dto.getRegiao().trim());
-            exercicio.setRegiao(novaRegiao);
-        }
-
-        // Atualiza tipo
-        if (dto.getTipo() != null && !dto.getTipo().trim().isEmpty()) {
-            TipoExercicio novoTipo = TipoExercicio.fromString(dto.getTipo().trim());
-            exercicio.setTipo(novoTipo);
-        }
-
-        // Atualiza unilateral
-        if (dto.getUnilateral() != null) {
-            exercicio.setUnilateral(dto.getUnilateral());
-        }
-
-        // Atualiza equipamento
-        if (dto.getEquipamentoId() != null) {
-            if (dto.getEquipamentoId() > 0) {
-                Equipamento equip = equipamentoRepository.findById(dto.getEquipamentoId())
-                    .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
-                exercicio.setEquipamento(equip);
-            } else {
-                exercicio.setEquipamento(null);
-            }
-        }
-
-        return exercicioRepository.save(exercicio);
+        return Optional.of(buscarPorId(id))
+                .map(exercicio -> atualizarDadosExercicio(exercicio, dto))
+                .map(exercicioRepository::save)
+                .orElseThrow(() -> new IllegalStateException("Erro ao atualizar exercício"));
     }
 
     @Transactional
@@ -186,16 +133,20 @@ public class ExercicioService {
 
     @Transactional(readOnly = true)
     public long contarPorRegiao(String regiao) {
-        if (regiao == null || regiao.trim().isEmpty()) {
-            throw new IllegalArgumentException("Região não pode estar vazia");
-        }
-        RegiaoCorpo regiaoEnum = RegiaoCorpo.fromString(regiao.trim());
-        return exercicioRepository.countByRegiao(regiaoEnum);
+        return Optional.ofNullable(regiao)
+                .filter(r -> !r.trim().isEmpty())
+                .map(String::trim)
+                .map(RegiaoCorpo::fromString)
+                .map(exercicioRepository::countByRegiao)
+                .orElseThrow(() -> new IllegalArgumentException("Região não pode estar vazia"));
     }
 
     @Transactional(readOnly = true)
     public boolean existeExercicio(Long id) {
-        return id != null && id > 0 && exercicioRepository.existsById(id);
+        return Optional.ofNullable(id)
+                .filter(i -> i > 0)
+                .map(exercicioRepository::existsById)
+                .orElse(false);
     }
 
     public String[] getRegioesValidas() {
@@ -204,5 +155,82 @@ public class ExercicioService {
 
     public String[] getTiposValidos() {
         return TipoExercicio.getDescricoes();
+    }
+
+    private void validarDadosObrigatorios(ExercicioDTO dto) {
+        if (dto.getNome() == null || dto.getNome().trim().isEmpty()) {
+            throw new IllegalArgumentException("Nome do exercício é obrigatório");
+        }
+        if (dto.getRegiao() == null || dto.getRegiao().trim().isEmpty()) {
+            throw new IllegalArgumentException("Região do exercício é obrigatória");
+        }
+        if (dto.getTipo() == null || dto.getTipo().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tipo do exercício é obrigatório");
+        }
+        if (dto.getUnilateral() == null) {
+            throw new IllegalArgumentException("Indicação de unilateralidade é obrigatória");
+        }
+    }
+
+    private void validarNomeUnico(String nome) {
+        if (exercicioRepository.existsByNomeIgnoreCase(nome)) {
+            throw new IllegalArgumentException("Já existe um exercício com este nome");
+        }
+    }
+
+    private Exercicio construirExercicio(ExercicioDTO dto) {
+        RegiaoCorpo regiaoEnum = RegiaoCorpo.fromString(dto.getRegiao().trim());
+        TipoExercicio tipoEnum = TipoExercicio.fromString(dto.getTipo().trim());
+        
+        Equipamento equipamento = Optional.ofNullable(dto.getEquipamentoId())
+                .flatMap(equipamentoRepository::findById)
+                .orElse(null);
+
+        return new Exercicio(dto.getNome().trim(), regiaoEnum, tipoEnum, dto.getUnilateral(), equipamento);
+    }
+
+    private Exercicio atualizarDadosExercicio(Exercicio exercicio, ExercicioDTO dto) {
+        // Atualiza nome
+        Optional.ofNullable(dto.getNome())
+                .filter(nome -> !nome.trim().isEmpty())
+                .map(String::trim)
+                .ifPresent(nome -> {
+                    if (exercicioRepository.existsByNomeIgnoreCaseAndIdNot(nome, exercicio.getId())) {
+                        throw new IllegalArgumentException("Já existe outro exercício com este nome");
+                    }
+                    exercicio.setNome(nome);
+                });
+
+        // Atualiza região
+        Optional.ofNullable(dto.getRegiao())
+                .filter(regiao -> !regiao.trim().isEmpty())
+                .map(String::trim)
+                .map(RegiaoCorpo::fromString)
+                .ifPresent(exercicio::setRegiao);
+
+        // Atualiza tipo
+        Optional.ofNullable(dto.getTipo())
+                .filter(tipo -> !tipo.trim().isEmpty())
+                .map(String::trim)
+                .map(TipoExercicio::fromString)
+                .ifPresent(exercicio::setTipo);
+
+        // Atualiza unilateral
+        Optional.ofNullable(dto.getUnilateral())
+                .ifPresent(exercicio::setUnilateral);
+
+        // Atualiza equipamento
+        Optional.ofNullable(dto.getEquipamentoId())
+                .ifPresent(equipId -> {
+                    if (equipId > 0) {
+                        Equipamento equip = equipamentoRepository.findById(equipId)
+                            .orElseThrow(() -> new IllegalArgumentException("Equipamento não encontrado"));
+                        exercicio.setEquipamento(equip);
+                    } else {
+                        exercicio.setEquipamento(null);
+                    }
+                });
+
+        return exercicio;
     }
 }

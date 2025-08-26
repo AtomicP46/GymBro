@@ -67,7 +67,7 @@ public class TreinoController {
             List<Treino> treinos = treinoService.listarTreinosPorUsuario(usuarioId);
             return ResponseEntity.ok(treinos);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -77,7 +77,7 @@ public class TreinoController {
             List<Treino> treinos = treinoService.listarTreinosPorPersonal(personalId);
             return ResponseEntity.ok(treinos);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -93,7 +93,7 @@ public class TreinoController {
             Treino treino = treinoService.iniciarTreino(id);
             return ResponseEntity.ok(treino);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.unprocessableEntity().build();
         }
     }
 
@@ -103,7 +103,7 @@ public class TreinoController {
             Treino treino = treinoService.finalizarTreino(id);
             return ResponseEntity.ok(treino);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.unprocessableEntity().build();
         }
     }
 
@@ -113,7 +113,7 @@ public class TreinoController {
             Treino treino = treinoService.atualizarTreino(id, treinoDTO);
             return ResponseEntity.ok(treino);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.unprocessableEntity().build();
         }
     }
 
@@ -123,7 +123,7 @@ public class TreinoController {
             treinoService.deletarTreino(id);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.unprocessableEntity().build();
         }
     }
 
@@ -147,7 +147,7 @@ public class TreinoController {
             List<TreinoExercicio> exercicios = treinoExercicioService.listarExerciciosDoTreino(treinoId);
             return ResponseEntity.ok(exercicios);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -159,7 +159,7 @@ public class TreinoController {
             TreinoExercicio treinoExercicio = treinoExercicioService.atualizarExercicioDoTreino(exercicioId, treinoExercicioDTO);
             return ResponseEntity.ok(treinoExercicio);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -169,7 +169,7 @@ public class TreinoController {
             treinoExercicioService.removerExercicioDoTreino(exercicioId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -184,7 +184,7 @@ public class TreinoController {
                 exercicioId, repeticoes, pesoUsado, anotacoes);
             return ResponseEntity.ok(treinoExercicio);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.notFound().build();
         }
     }
 

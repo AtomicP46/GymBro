@@ -14,8 +14,15 @@ public class TreinoExercicioDTO {
     @Positive(message = "Número de séries deve ser positivo")
     private Integer series;
     
+    @Positive(message = "Número de séries sugeridas deve ser positivo")
+    private Integer seriesSugeridas;
+    
     @Positive(message = "Número de repetições deve ser positivo")
     private Integer repeticoes;
+    
+    @Positive(message = "Número de repetições sugeridas deve ser positivo")
+    private Integer repeticoesSugeridas;
+
     
     @PositiveOrZero(message = "Peso usado não pode ser negativo")
     private Float pesoUsado;
@@ -27,7 +34,7 @@ public class TreinoExercicioDTO {
     public TreinoExercicioDTO() {}
 
     public TreinoExercicioDTO(Long treinoId, Long exercicioId, Integer series, Integer repeticoes, 
-                             Float pesoUsado, String anotacoes, Boolean aquecimento) {
+                             Float pesoUsado, String anotacoes, Boolean aquecimento, Integer seriesSugeridas, Integer repeticoesSugeridas) {
         this.treinoId = treinoId;
         this.exercicioId = exercicioId;
         this.series = series;
@@ -35,6 +42,8 @@ public class TreinoExercicioDTO {
         this.pesoUsado = pesoUsado;
         this.anotacoes = anotacoes;
         this.aquecimento = aquecimento;
+        this.seriesSugeridas = seriesSugeridas;
+        this.repeticoesSugeridas = repeticoesSugeridas;
     }
 
     // Getters e Setters
@@ -92,5 +101,21 @@ public class TreinoExercicioDTO {
 
     public void setAquecimento(Boolean aquecimento) {
         this.aquecimento = aquecimento;
+    }
+
+    public Integer getSeriesSugeridas() {
+        return seriesSugeridas;
+    }
+
+    public void setSeriesSugeridas(Integer seriesSugeridas) {
+        this.seriesSugeridas = seriesSugeridas;
+    }
+
+    public Integer getRepeticoesSugeridas() {
+        return repeticoesSugeridas;
+    }
+
+    public void setRepeticoesSugeridas(Integer repeticoesSugeridas) {
+        this.repeticoesSugeridas = repeticoesSugeridas;
     }
 }

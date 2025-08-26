@@ -1,0 +1,9 @@
+com\gymbro\service\AuthServiceTest.class
+com\gymbro\service\PlanoServiceTest.class
+com\gymbro\service\TreinoServiceTest.class
+com\gymbro\service\AlunoServiceTest.class
+com\gymbro\service\TreinoExercicioServiceTest.class
+com\gymbro\service\ExercicioServiceTest.class
+com\gymbro\service\PersonalServiceTest.class
+com\gymbro\service\PlanoExercicioServiceTest.class
+com\gymbro\service\EquipamentoServiceTest.class

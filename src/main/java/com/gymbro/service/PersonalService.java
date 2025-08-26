@@ -2,6 +2,7 @@ package com.gymbro.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -18,31 +19,27 @@ import com.gymbro.repository.PersonalRepository;
 @Transactional
 public class PersonalService {
 
-    @Autowired
-    private PersonalRepository personalRepository;
+    private final PersonalRepository personalRepository;
+    private final ModelMapper modelMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public PersonalService(PersonalRepository personalRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+        this.personalRepository = personalRepository;
+        this.modelMapper = modelMapper;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public PersonalDTO criarPersonal(PersonalDTO personalDTO) {
-        if (personalRepository.existsByEmail(personalDTO.getEmail())) {
-            throw new IllegalArgumentException("Email já está em uso");
-        }
-
-        if (Boolean.FALSE.equals(personalDTO.getFormado())
-            && (personalDTO.getLicenca() == null || personalDTO.getLicenca().trim().isEmpty())) {
-            throw new IllegalArgumentException(
-                "Licença é obrigatória para personal trainers não formados em educação física");
-        }
-
-        Personal personal = modelMapper.map(personalDTO, Personal.class);
-        personal.setSenhaHash(passwordEncoder.encode(personalDTO.getSenha()));
-
-        Personal salvo = personalRepository.save(personal);
-        return toDTO(salvo);
+        validarEmailUnico(personalDTO.getEmail());
+        validarLicencaSeNecessario(personalDTO);
+        
+        return Optional.of(personalDTO)
+                .map(dto -> modelMapper.map(dto, Personal.class))
+                .map(this::criptografarSenha)
+                .map(personalRepository::save)
+                .map(this::toDTO)
+                .orElseThrow(() -> new IllegalStateException("Erro ao criar personal"));
     }
 
     @Transactional(readOnly = true)
@@ -65,34 +62,15 @@ public class PersonalService {
     }
 
     public PersonalDTO atualizarPersonal(Long id, PersonalDTO personalDTO) {
-        Personal personal = personalRepository.findById(id)
+        return personalRepository.findById(id)
+                .map(personal -> {
+                    validarEmailUnicoParaAtualizacao(personal, personalDTO.getEmail());
+                    validarLicencaSeNecessario(personalDTO);
+                    return atualizarDadosPersonal(personal, personalDTO);
+                })
+                .map(personalRepository::save)
+                .map(this::toDTO)
                 .orElseThrow(() -> new java.util.NoSuchElementException("Personal não encontrado"));
-
-        if (!personal.getEmail().equals(personalDTO.getEmail())
-            && personalRepository.existsByEmail(personalDTO.getEmail())) {
-            throw new IllegalArgumentException("Email já está em uso");
-        }
-
-        if (Boolean.FALSE.equals(personalDTO.getFormado())
-            && (personalDTO.getLicenca() == null || personalDTO.getLicenca().trim().isEmpty())) {
-            throw new IllegalArgumentException(
-                "Licença é obrigatória para personal trainers não formados em educação física");
-        }
-
-        personal.setNome(personalDTO.getNome());
-        personal.setEmail(personalDTO.getEmail());
-        personal.setDataNascimento(personalDTO.getDataNascimento());
-        personal.setFormado(personalDTO.getFormado());
-        personal.setCodigoValidacao(personalDTO.getCodigoValidacao());
-        personal.setLinkValidacao(personalDTO.getLinkValidacao());
-        personal.setLicenca(personalDTO.getLicenca());
-
-        if (personalDTO.getSenha() != null && !personalDTO.getSenha().isBlank()) {
-            personal.setSenhaHash(passwordEncoder.encode(personalDTO.getSenha()));
-        }
-
-        Personal atualizado = personalRepository.save(personal);
-        return toDTO(atualizado);
     }
 
     public void deletarPersonal(Long id) {
@@ -109,12 +87,58 @@ public class PersonalService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Expor entidade Personal para autenticação
-     */
+    @Transactional(readOnly = true)
+    public List<PersonalDTO> buscarPorCriterio(Predicate<Personal> criterio) {
+        return personalRepository.findAll().stream()
+                .filter(criterio)
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public Optional<Personal> buscarEntidadePorEmail(String email) {
         return personalRepository.findByEmail(email);
+    }
+
+    private void validarEmailUnico(String email) {
+        if (personalRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email já está em uso");
+        }
+    }
+
+    private void validarEmailUnicoParaAtualizacao(Personal personal, String novoEmail) {
+        if (!personal.getEmail().equals(novoEmail) && personalRepository.existsByEmail(novoEmail)) {
+            throw new IllegalArgumentException("Email já está em uso");
+        }
+    }
+
+    private void validarLicencaSeNecessario(PersonalDTO dto) {
+        if (Boolean.FALSE.equals(dto.getFormado()) && 
+            (dto.getLicenca() == null || dto.getLicenca().trim().isEmpty())) {
+            throw new IllegalArgumentException(
+                "Licença é obrigatória para personal trainers não formados em educação física");
+        }
+    }
+
+    private Personal criptografarSenha(Personal personal) {
+        personal.setSenhaHash(passwordEncoder.encode(personal.getSenhaHash()));
+        return personal;
+    }
+
+    private Personal atualizarDadosPersonal(Personal personal, PersonalDTO dto) {
+        personal.setNome(dto.getNome());
+        personal.setEmail(dto.getEmail());
+        personal.setDataNascimento(dto.getDataNascimento());
+        personal.setFormado(dto.getFormado());
+        personal.setCodigoValidacao(dto.getCodigoValidacao());
+        personal.setLinkValidacao(dto.getLinkValidacao());
+        personal.setLicenca(dto.getLicenca());
+
+        Optional.ofNullable(dto.getSenha())
+                .filter(senha -> !senha.isBlank())
+                .ifPresent(senha -> personal.setSenhaHash(passwordEncoder.encode(senha)));
+
+        return personal;
     }
 
     private PersonalDTO toDTO(Personal personal) {

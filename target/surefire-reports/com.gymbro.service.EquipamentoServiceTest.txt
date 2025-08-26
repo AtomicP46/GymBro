@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.gymbro.service.EquipamentoServiceTest
+-------------------------------------------------------------------------------
+Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.18 s - in com.gymbro.service.EquipamentoServiceTest

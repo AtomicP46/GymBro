@@ -2,6 +2,8 @@ package com.gymbro.service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -35,7 +37,7 @@ public class AuthService {
         PersonalService personalService,
         PasswordEncoder passwordEncoder
     ) {
-        this.alunoService    = alunoService;
+        this.alunoService = alunoService;
         this.personalService = personalService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -43,62 +45,55 @@ public class AuthService {
     public LoginResponseDTO login(LoginRequestDTO request) {
         String email = request.getEmail().trim().toLowerCase();
 
-        // 1) Autentica Aluno
-        var alunoOpt = alunoService.buscarEntidadePorEmail(email);
-        if (alunoOpt.isPresent()) {
-            Aluno aluno = alunoOpt.get();
-            validarSenha(request.getSenha(), aluno.getSenhaHash());
+        return tentarAutenticarAluno(email, request.getSenha())
+                .or(() -> tentarAutenticarPersonal(email, request.getSenha()))
+                .orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
+    }
+
+    private Optional<LoginResponseDTO> tentarAutenticarAluno(String email, String senha) {
+        return alunoService.buscarEntidadePorEmail(email)
+                .filter(aluno -> validarSenha(senha, aluno.getSenhaHash()))
+                .map(criarResponseParaAluno());
+    }
+
+    private Optional<LoginResponseDTO> tentarAutenticarPersonal(String email, String senha) {
+        return personalService.buscarEntidadePorEmail(email)
+                .filter(personal -> validarSenha(senha, personal.getSenhaHash()))
+                .map(criarResponseParaPersonal());
+    }
+
+    private Function<Aluno, LoginResponseDTO> criarResponseParaAluno() {
+        return aluno -> {
             List<String> roles = List.of("ROLE_ALUNO");
             String token = createToken(aluno.getId(), aluno.getEmail(), roles);
+            return new LoginResponseDTO(token, "Aluno", aluno.getId(), aluno.getNome(), aluno.getEmail());
+        };
+    }
 
-            return new LoginResponseDTO(
-                token,
-                "Aluno",
-                aluno.getId(),
-                aluno.getNome(),
-                aluno.getEmail()
-            );
-        }
-
-        // 2) Autentica Personal
-        var personalOpt = personalService.buscarEntidadePorEmail(email);
-        if (personalOpt.isPresent()) {
-            Personal personal = personalOpt.get();
-            validarSenha(request.getSenha(), personal.getSenhaHash());
+    private Function<Personal, LoginResponseDTO> criarResponseParaPersonal() {
+        return personal -> {
             List<String> roles = List.of("ROLE_PERSONAL");
             String token = createToken(personal.getId(), personal.getEmail(), roles);
-
-            return new LoginResponseDTO(
-                token,
-                "Personal",
-                personal.getId(),
-                personal.getNome(),
-                personal.getEmail()
-            );
-        }
-
-        // 3) Nenhum encontrado
-        throw new BadCredentialsException("Credenciais inválidas");
+            return new LoginResponseDTO(token, "Personal", personal.getId(), personal.getNome(), personal.getEmail());
+        };
     }
 
     public boolean validarCredenciais(String emailRaw, String senhaRaw) {
         String email = emailRaw.trim().toLowerCase();
 
-        boolean alunoOk = alunoService.buscarEntidadePorEmail(email)
-            .filter(a -> passwordEncoder.matches(senhaRaw, a.getSenhaHash()))
-            .isPresent();
+        boolean alunoValido = alunoService.buscarEntidadePorEmail(email)
+                .map(aluno -> validarSenha(senhaRaw, aluno.getSenhaHash()))
+                .orElse(false);
 
-        boolean personalOk = personalService.buscarEntidadePorEmail(email)
-            .filter(p -> passwordEncoder.matches(senhaRaw, p.getSenhaHash()))
-            .isPresent();
+        boolean personalValido = personalService.buscarEntidadePorEmail(email)
+                .map(personal -> validarSenha(senhaRaw, personal.getSenhaHash()))
+                .orElse(false);
 
-        return alunoOk || personalOk;
+        return alunoValido || personalValido;
     }
 
-    private void validarSenha(String raw, String hash) {
-        if (!passwordEncoder.matches(raw, hash)) {
-            throw new BadCredentialsException("Credenciais inválidas");
-        }
+    private boolean validarSenha(String raw, String hash) {
+        return passwordEncoder.matches(raw, hash);
     }
 
     private String createToken(Long userId, String email, List<String> roles) {

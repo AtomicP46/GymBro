@@ -7,9 +7,11 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.gymbro.dto.PlanoExercicioDTO;
-import com.gymbro.model.Exercicio;
 import com.gymbro.model.PlanoExercicio;
 import com.gymbro.repository.ExercicioRepository;
 import com.gymbro.repository.PlanoExercicioRepository;
@@ -27,32 +29,48 @@ public class PlanoExercicioService {
     @Autowired
     private ExercicioRepository exercicioRepository;
 
+    // Os predicados serão definidos como métodos privados para evitar problemas de inicialização
+
     @Transactional
     public PlanoExercicio adicionarExercicio(@Valid PlanoExercicioDTO dto) {
-        // Verificar se o exercício existe
-        if (!exercicioRepository.existsById(dto.getExercicioId())) {
+        if (!exercicioExiste(dto.getExercicioId())) {
             throw new ResourceNotFoundException("Exercício não encontrado com ID: " + dto.getExercicioId());
         }
-
-        // Verificar se o exercício já está no plano
-        if (planoExercicioRepository.existsByPlanoIdAndExercicioId(dto.getPlanoId(), dto.getExercicioId())) {
+        
+        if (exercicioJaExisteNoPlano(dto)) {
             throw new BusinessException("Este exercício já está adicionado ao plano");
         }
+        
+        PlanoExercicio planoExercicio = criarPlanoExercicio(dto);
+        return planoExercicioRepository.save(planoExercicio);
+    }
 
-        PlanoExercicio planoExercicio = new PlanoExercicio(
+    private boolean exercicioExiste(Long exercicioId) {
+        return exercicioRepository.existsById(exercicioId);
+    }
+
+    private boolean exercicioJaExisteNoPlano(PlanoExercicioDTO dto) {
+        return planoExercicioRepository.existsByPlanoIdAndExercicioId(dto.getPlanoId(), dto.getExercicioId());
+    }
+
+    private PlanoExercicio criarPlanoExercicio(PlanoExercicioDTO dto) {
+        return new PlanoExercicio(
             dto.getPlanoId(),
             dto.getExercicioId(),
             dto.getSeriesSugeridas(),
             dto.getObservacoes(),
-            dto.getAquecimento() != null ? dto.getAquecimento() : false
+            Optional.ofNullable(dto.getAquecimento()).orElse(false)
         );
-
-        return planoExercicioRepository.save(planoExercicio);
     }
 
     @Transactional(readOnly = true)
-    public PlanoExercicio buscarPorId(@NotNull Long id) {
-        return planoExercicioRepository.findById(id)
+    public Optional<PlanoExercicio> buscarPorId(@NotNull Long id) {
+        return planoExercicioRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public PlanoExercicio obterPorId(@NotNull Long id) {
+        return buscarPorId(id)
             .orElseThrow(() -> new ResourceNotFoundException("Exercício do plano não encontrado com ID: " + id));
     }
 
@@ -63,35 +81,56 @@ public class PlanoExercicioService {
 
     @Transactional(readOnly = true)
     public List<PlanoExercicio> listarAquecimentoPorPlano(@NotNull Long planoId) {
-        return planoExercicioRepository.findByPlanoIdAndAquecimentoTrueOrderById(planoId);
+        return listarPorPlano(planoId).stream()
+            .filter(PlanoExercicio::getAquecimento)
+            .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<PlanoExercicio> listarPrincipaisPorPlano(@NotNull Long planoId) {
-        return planoExercicioRepository.findByPlanoIdAndAquecimentoFalseOrderById(planoId);
+        return listarPorPlano(planoId).stream()
+            .filter(pe -> !pe.getAquecimento())
+            .collect(Collectors.toList());
     }
 
     @Transactional
     public PlanoExercicio atualizarExercicio(@NotNull Long id, @Valid PlanoExercicioDTO dto) {
-        PlanoExercicio existente = buscarPorId(id);
+        return buscarPorId(id)
+            .map(existente -> atualizarCampos(existente, dto))
+            .map(planoExercicioRepository::save)
+            .orElseThrow(() -> new ResourceNotFoundException("Exercício do plano não encontrado com ID: " + id));
+    }
 
+    private PlanoExercicio atualizarCampos(PlanoExercicio existente, PlanoExercicioDTO dto) {
         existente.setSeriesSugeridas(dto.getSeriesSugeridas());
         existente.setObservacoes(dto.getObservacoes());
-        existente.setAquecimento(dto.getAquecimento() != null ? dto.getAquecimento() : false);
-
-        return planoExercicioRepository.save(existente);
+        existente.setAquecimento(Optional.ofNullable(dto.getAquecimento()).orElse(false));
+        return existente;
     }
 
     @Transactional
     public void removerExercicio(@NotNull Long id) {
-        if (!planoExercicioRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Exercício do plano não encontrado com ID: " + id);
-        }
-        planoExercicioRepository.deleteById(id);
+        buscarPorId(id)
+            .ifPresentOrElse(
+                pe -> planoExercicioRepository.deleteById(id),
+                () -> { throw new ResourceNotFoundException("Exercício do plano não encontrado com ID: " + id); }
+            );
     }
 
     @Transactional
     public void removerTodosExerciciosDoPlano(@NotNull Long planoId) {
         planoExercicioRepository.deleteByPlanoId(planoId);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarExerciciosPorPlano(@NotNull Long planoId) {
+        return listarPorPlano(planoId).stream().count();
+    }
+
+    @Transactional(readOnly = true)
+    public long contarAquecimentosPorPlano(@NotNull Long planoId) {
+        return listarPorPlano(planoId).stream()
+            .filter(PlanoExercicio::getAquecimento)
+            .count();
     }
 }

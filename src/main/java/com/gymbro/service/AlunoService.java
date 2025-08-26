@@ -3,6 +3,7 @@ package com.gymbro.service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -19,25 +20,26 @@ import com.gymbro.repository.AlunoRepository;
 @Transactional
 public class AlunoService {
 
-    @Autowired
-    private AlunoRepository alunoRepository;
+    private final AlunoRepository alunoRepository;
+    private final ModelMapper modelMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public AlunoService(AlunoRepository alunoRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+        this.alunoRepository = alunoRepository;
+        this.modelMapper = modelMapper;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public AlunoDTO criarAluno(AlunoDTO alunoDTO) {
-        if (alunoRepository.existsByEmail(alunoDTO.getEmail())) {
-            throw new IllegalArgumentException("Email já está em uso");
-        }
-
-        Aluno aluno = modelMapper.map(alunoDTO, Aluno.class);
-        aluno.setSenhaHash(passwordEncoder.encode(alunoDTO.getSenha()));
-
-        Aluno salvo = alunoRepository.save(aluno);
-        return toDTO(salvo);
+        validarEmailUnico(alunoDTO.getEmail());
+        
+        return Optional.of(alunoDTO)
+                .map(dto -> modelMapper.map(dto, Aluno.class))
+                .map(this::criptografarSenha)
+                .map(alunoRepository::save)
+                .map(this::toDTO)
+                .orElseThrow(() -> new IllegalStateException("Erro ao criar aluno"));
     }
 
     @Transactional(readOnly = true)
@@ -60,25 +62,14 @@ public class AlunoService {
     }
 
     public AlunoDTO atualizarAluno(Long id, AlunoDTO alunoDTO) {
-        Aluno aluno = alunoRepository.findById(id)
+        return alunoRepository.findById(id)
+                .map(aluno -> {
+                    validarEmailUnicoParaAtualizacao(aluno, alunoDTO.getEmail());
+                    return atualizarDadosAluno(aluno, alunoDTO);
+                })
+                .map(alunoRepository::save)
+                .map(this::toDTO)
                 .orElseThrow(() -> new java.util.NoSuchElementException("Aluno não encontrado"));
-
-        if (!aluno.getEmail().equals(alunoDTO.getEmail())
-            && alunoRepository.existsByEmail(alunoDTO.getEmail())) {
-            throw new IllegalArgumentException("Email já está em uso");
-        }
-
-        aluno.setNome(alunoDTO.getNome());
-        aluno.setEmail(alunoDTO.getEmail());
-        aluno.setDataNascimento(alunoDTO.getDataNascimento());
-        aluno.setPeso(alunoDTO.getPeso());
-
-        if (alunoDTO.getSenha() != null && !alunoDTO.getSenha().isBlank()) {
-            aluno.setSenhaHash(passwordEncoder.encode(alunoDTO.getSenha()));
-        }
-
-        Aluno atualizado = alunoRepository.save(aluno);
-        return toDTO(atualizado);
     }
 
     public void deletarAluno(Long id) {
@@ -95,12 +86,47 @@ public class AlunoService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Expor entidade Aluno para autenticação
-     */
+    @Transactional(readOnly = true)
+    public List<AlunoDTO> buscarPorCriterio(Predicate<Aluno> criterio) {
+        return alunoRepository.findAll().stream()
+                .filter(criterio)
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public Optional<Aluno> buscarEntidadePorEmail(String email) {
         return alunoRepository.findByEmail(email);
+    }
+
+    private void validarEmailUnico(String email) {
+        if (alunoRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email já está em uso");
+        }
+    }
+
+    private void validarEmailUnicoParaAtualizacao(Aluno aluno, String novoEmail) {
+        if (!aluno.getEmail().equals(novoEmail) && alunoRepository.existsByEmail(novoEmail)) {
+            throw new IllegalArgumentException("Email já está em uso");
+        }
+    }
+
+    private Aluno criptografarSenha(Aluno aluno) {
+        aluno.setSenhaHash(passwordEncoder.encode(aluno.getSenhaHash()));
+        return aluno;
+    }
+
+    private Aluno atualizarDadosAluno(Aluno aluno, AlunoDTO dto) {
+        aluno.setNome(dto.getNome());
+        aluno.setEmail(dto.getEmail());
+        aluno.setDataNascimento(dto.getDataNascimento());
+        aluno.setPeso(dto.getPeso());
+
+        Optional.ofNullable(dto.getSenha())
+                .filter(senha -> !senha.isBlank())
+                .ifPresent(senha -> aluno.setSenhaHash(passwordEncoder.encode(senha)));
+
+        return aluno;
     }
 
     private AlunoDTO toDTO(Aluno aluno) {

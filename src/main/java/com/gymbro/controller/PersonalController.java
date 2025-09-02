@@ -2,10 +2,9 @@ package com.gymbro.controller;
 
 import java.net.URI;
 import java.util.List;
-import java.util.NoSuchElementException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,69 +25,80 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/personais")
 @CrossOrigin(origins = "*")
+@Validated
 public class PersonalController {
 
-    @Autowired
-    private PersonalService personalService;
+    private final PersonalService personalService;
+
+    public PersonalController(PersonalService personalService) {
+        this.personalService = personalService;
+    }
 
     @PostMapping
-    public ResponseEntity<PersonalDTO> criar(@Valid @RequestBody PersonalDTO dto) {
-        try {
-            PersonalDTO criado = personalService.criarPersonal(dto);
-            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                    .path("/{id}")
-                    .buildAndExpand(criado.getId())
-                    .toUri();
-            return ResponseEntity.created(location).body(criado);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(409).build(); // Email duplicado ou licença inválida
-        }
+    public ResponseEntity<PersonalDTO> criar(
+            @Valid @RequestBody PersonalDTO dto) {
+
+        PersonalDTO criado = personalService.criarPersonal(dto);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(criado.getId())
+                .toUri();
+
+        return ResponseEntity
+                .created(location)
+                .body(criado);
     }
 
     @GetMapping
     public ResponseEntity<List<PersonalDTO>> listar() {
-        return ResponseEntity.ok(personalService.listarTodos());
+        List<PersonalDTO> lista = personalService.listarTodos();
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PersonalDTO> buscarPorId(@PathVariable Long id) {
-        return personalService.buscarPorId(id)
+    public ResponseEntity<PersonalDTO> buscarPorId(
+            @PathVariable Long id) {
+
+        return personalService
+                .buscarPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/email/{email}")
-    public ResponseEntity<PersonalDTO> buscarPorEmail(@PathVariable String email) {
-        return personalService.buscarPorEmail(email)
+    @GetMapping("/by-email")
+    public ResponseEntity<PersonalDTO> buscarPorEmail(
+            @RequestParam("email") String email) {
+
+        return personalService
+                .buscarPorEmail(email)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PersonalDTO> atualizar(@PathVariable Long id,
-                                                 @Valid @RequestBody PersonalDTO dto) {
-        try {
-            PersonalDTO atualizado = personalService.atualizarPersonal(id, dto);
-            return ResponseEntity.ok(atualizado);
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(409).build(); // Email duplicado ou licença inválida
-        }
+    public ResponseEntity<PersonalDTO> atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody PersonalDTO dto) {
+
+        PersonalDTO atualizado = personalService.atualizarPersonal(id, dto);
+        return ResponseEntity.ok(atualizado);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        try {
-            personalService.deletarPersonal(id);
-            return ResponseEntity.noContent().build();
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Void> deletar(
+            @PathVariable Long id) {
+
+        personalService.deletarPersonal(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/formacao")
-    public ResponseEntity<List<PersonalDTO>> buscarPorFormacao(@RequestParam("formado") Boolean formado) {
-        return ResponseEntity.ok(personalService.buscarPorFormacao(formado));
+    public ResponseEntity<List<PersonalDTO>> buscarPorFormacao(
+            @RequestParam("formado") Boolean formado) {
+
+        List<PersonalDTO> filtrados = personalService
+                .buscarPorFormacao(formado);
+        return ResponseEntity.ok(filtrados);
     }
 }

@@ -55,7 +55,7 @@ class TreinoServiceTest {
     @BeforeEach
     void setUp() {
         treinoDTO = new TreinoDTO();
-        treinoDTO.setUsuarioId(1L);
+        treinoDTO.setAlunoId(1L);
         treinoDTO.setPersonalId(1L);
         treinoDTO.setNome("Treino Teste");
 

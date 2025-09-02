@@ -6,30 +6,44 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class TreinoDTO {
+
+    private Long id;
+
     @NotBlank(message = "Nome do treino é obrigatório")
     private String nome;
-    
+
     private String descricao;
-    
+
     private LocalDateTime dataHoraInicio;
     private LocalDateTime dataHoraFim;
-    
-    @NotNull(message = "ID do usuário é obrigatório")
-    private Long usuarioId;
-    
+
+    @NotNull(message = "ID do aluno é obrigatório")
+    private Long alunoId;
+
     private Long personalId;
 
-    // Construtores
     public TreinoDTO() {}
 
-    public TreinoDTO(String nome, LocalDateTime dataHoraInicio, Long usuarioId, Long personalId) {
+    public TreinoDTO(String nome,
+                     LocalDateTime dataHoraInicio,
+                     Long alunoId,
+                     Long personalId) {
         this.nome = nome;
         this.dataHoraInicio = dataHoraInicio;
-        this.usuarioId = usuarioId;
+        this.alunoId = alunoId;
         this.personalId = personalId;
     }
 
     // Getters e Setters
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getNome() {
         return nome;
     }
@@ -62,12 +76,12 @@ public class TreinoDTO {
         this.dataHoraFim = dataHoraFim;
     }
 
-    public Long getUsuarioId() {
-        return usuarioId;
+    public Long getAlunoId() {
+        return alunoId;
     }
 
-    public void setUsuarioId(Long usuarioId) {
-        this.usuarioId = usuarioId;
+    public void setAlunoId(Long alunoId) {
+        this.alunoId = alunoId;
     }
 
     public Long getPersonalId() {

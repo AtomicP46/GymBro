@@ -1,5 +1,6 @@
 services:
-  postgres:
+
+  gymbro_db:
     image: postgres:15-alpine
     container_name: gymbro_db
     environment:
@@ -10,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d Gymbro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   app:
@@ -18,9 +24,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      gymbro_db:
+        condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gymbro_db:5432/Gymbro
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: MEp@706504
     restart: unless-stopped
 
 volumes:

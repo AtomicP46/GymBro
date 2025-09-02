@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 
 public class ExercicioDTO {
 
+    private Long id;
+
     @NotBlank(message = "Nome do exercício é obrigatório")
     private String nome;
 
@@ -17,22 +19,30 @@ public class ExercicioDTO {
     @NotNull(message = "Indicação de unilateralidade é obrigatória")
     private Boolean unilateral;
 
-    @NotNull(message = "Equipamento é obrigatório")
+    // Campo agora opcional: removida a anotação @NotNull
     private Long equipamentoId;
 
     public ExercicioDTO() {
     }
 
     public ExercicioDTO(String nome,
-                         String regiao,
-                         String tipo,
-                         Boolean unilateral,
-                         Long equipamentoId) {
+                        String regiao,
+                        String tipo,
+                        Boolean unilateral,
+                        Long equipamentoId) {
         this.nome = nome;
         this.regiao = regiao;
         this.tipo = tipo;
         this.unilateral = unilateral;
         this.equipamentoId = equipamentoId;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getNome() {

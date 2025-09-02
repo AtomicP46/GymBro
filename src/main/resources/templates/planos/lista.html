@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Planos - GymBro</title>
+</head>
+<body>
+    <main>
+        <div class="container mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Planos de Treino</h2>
+                <a href="/web/planos/novo" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Novo Plano
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Objetivo</th>
+                                    <th>Duração (semanas)</th>
+                                    <th>Personal</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="plano : ${planos}">
+                                    <td th:text="${plano.id}"></td>
+                                    <td th:text="${plano.nome}"></td>
+                                    <td th:text="${plano.objetivo}"></td>
+                                    <td th:text="${plano.duracaoSemanas}"></td>
+                                    <td th:text="${plano.personal?.nome ?: 'N/A'}"></td>
+                                    <td>
+                                        <a th:href="@{/web/planos/editar/{id}(id=${plano.id})}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
+                                        <!-- Fixed undefined confirmarExclusao function call with inline confirm -->
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-1"
+                                                th:onclick="'if(confirm(\'Tem certeza que deseja excluir este plano?\')) { window.location.href=\'/web/planos/excluir/\' + ' + ${plano.id} + '; }'">
+                                            <i class="fas fa-trash"></i> Excluir
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(planos)}">
+                                    <td colspan="6" class="text-center text-muted">
+                                        Nenhum plano cadastrado
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

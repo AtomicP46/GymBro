@@ -21,21 +21,21 @@ public abstract class Usuario {
     private Long id;
 
     @NotBlank(message = "Nome é obrigatório")
-    @Column(nullable = false, length = 100)
+    @Column(name = "nome", nullable = false, length = 100, insertable = true, updatable = true)
     private String nome;
 
     @Email(message = "Email deve ter formato válido")
     @NotBlank(message = "Email é obrigatório")
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(name = "email", nullable = false, unique = true, length = 150, insertable = true, updatable = true)
     private String email;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Column(name = "senha_hash", nullable = false)
+    @Column(name = "senha_hash", nullable = false, insertable = true, updatable = true)
     private String senhaHash;
 
     @NotNull(message = "Data de nascimento é obrigatória")
     @Past(message = "Data de nascimento deve ser no passado")
-    @Column(name = "data_nascimento", nullable = false)
+    @Column(name = "data_nascimento", nullable = false, insertable = true, updatable = true)
     private LocalDate dataNascimento;
 
     public Usuario() {}

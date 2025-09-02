@@ -34,8 +34,14 @@ public class PersonalService {
         validarEmailUnico(personalDTO.getEmail());
         validarLicencaSeNecessario(personalDTO);
         
+        System.out.println("[DEBUG] PersonalDTO senha: " + personalDTO.getSenha());
+        
         return Optional.of(personalDTO)
-                .map(dto -> modelMapper.map(dto, Personal.class))
+                .map(dto -> {
+                    Personal personal = modelMapper.map(dto, Personal.class);
+                    System.out.println("[DEBUG] Personal senhaHash after mapping: " + personal.getSenhaHash());
+                    return personal;
+                })
                 .map(this::criptografarSenha)
                 .map(personalRepository::save)
                 .map(this::toDTO)
@@ -121,7 +127,17 @@ public class PersonalService {
     }
 
     private Personal criptografarSenha(Personal personal) {
-        personal.setSenhaHash(passwordEncoder.encode(personal.getSenhaHash()));
+        String senhaPlainText = personal.getSenhaHash();
+        System.out.println("[DEBUG] Password to encode: " + senhaPlainText);
+        
+        if (senhaPlainText == null || senhaPlainText.trim().isEmpty()) {
+            throw new IllegalArgumentException("Senha não pode ser nula ou vazia para criptografia");
+        }
+        
+        String senhaEncoded = passwordEncoder.encode(senhaPlainText);
+        System.out.println("[DEBUG] Encoded password: " + senhaEncoded);
+        
+        personal.setSenhaHash(senhaEncoded);
         return personal;
     }
 

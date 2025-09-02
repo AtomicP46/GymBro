@@ -1,6 +1,7 @@
 package com.gymbro.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,6 +19,7 @@ import com.gymbro.dto.ExercicioDTO;
 import com.gymbro.dto.PersonalDTO;
 import com.gymbro.dto.PlanoDTO;
 import com.gymbro.dto.TreinoDTO;
+import com.gymbro.exception.ResourceNotFoundException;
 import com.gymbro.service.AlunoService;
 import com.gymbro.service.EquipamentoService;
 import com.gymbro.service.ExercicioService;
@@ -43,6 +45,10 @@ public class WebController {
 
     @Autowired
     private EquipamentoService equipamentoService;
+        @ModelAttribute("equipamentos")
+    public List<EquipamentoDTO> populaEquipamentos() {
+        return equipamentoService.listarTodos();
+    }
 
     @Autowired
     private PlanoService planoService;
@@ -53,18 +59,33 @@ public class WebController {
         return "index";
     }
 
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+
     // === ALUNOS ===
     @GetMapping("/alunos")
     public String listarAlunos(Model model) {
-        List<AlunoDTO> alunos = alunoService.listarTodos();
-        model.addAttribute("alunos", alunos);
-        return "alunos/lista";
+        try {
+            List<AlunoDTO> alunos = alunoService.listarTodos();
+            model.addAttribute("alunos", alunos);
+            return "alunos/lista";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar lista de alunos: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/alunos/novo")
     public String novoAluno(Model model) {
-        model.addAttribute("aluno", new AlunoDTO());
-        return "alunos/form";
+        try {
+            model.addAttribute("aluno", new AlunoDTO());
+            return "alunos/form";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar formulário de aluno: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @PostMapping("/alunos/salvar")
@@ -79,9 +100,17 @@ public class WebController {
 
     @GetMapping("/alunos/editar/{id}")
     public String editarAluno(@PathVariable Long id, Model model) {
-        AlunoDTO aluno = alunoService.buscarPorId(id).orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
-        model.addAttribute("aluno", aluno);
-        return "alunos/form";
+        try {
+            AlunoDTO aluno = alunoService.buscarPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado com ID: " + id));
+            model.addAttribute("aluno", aluno);
+            return "alunos/form";
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar aluno: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/alunos/excluir/{id}")
@@ -93,17 +122,31 @@ public class WebController {
     // === EXERCÍCIOS ===
     @GetMapping("/exercicios")
     public String listarExercicios(Model model) {
-        List<ExercicioDTO> exercicios = exercicioService.listarTodos().stream()
-                .map(this::convertToExercicioDTO)
-                .collect(java.util.stream.Collectors.toList());
-        model.addAttribute("exercicios", exercicios);
-        return "exercicios/lista";
+        try {
+            List<ExercicioDTO> exercicios = exercicioService.listarTodos().stream()
+                    .map(this::convertToExercicioDTO)
+                    .collect(Collectors.toList());
+            model.addAttribute("exercicios", exercicios);
+            return "exercicios/lista";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar lista de exercícios: " + e.getMessage());
+            return "error/500";
+        }
     }
+
 
     @GetMapping("/exercicios/novo")
     public String novoExercicio(Model model) {
-        model.addAttribute("exercicio", new ExercicioDTO());
-        return "exercicios/form";
+        try {
+            model.addAttribute("exercicio", new ExercicioDTO());
+            // CORREÇÃO: popula a lista de equipamentos antes de renderizar o form
+            List<EquipamentoDTO> equipamentos = equipamentoService.listarTodos();
+            model.addAttribute("equipamentos", equipamentos);
+            return "exercicios/form";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar formulário de exercício: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @PostMapping("/exercicios/salvar")
@@ -118,10 +161,21 @@ public class WebController {
 
     @GetMapping("/exercicios/editar/{id}")
     public String editarExercicio(@PathVariable Long id, Model model) {
-        ExercicioDTO exercicio = convertToExercicioDTO(exercicioService.buscarPorId(id));
-        model.addAttribute("exercicio", exercicio);
-        return "exercicios/form";
+        try {
+            ExercicioDTO exercicio = convertToExercicioDTO(exercicioService.buscarPorId(id));
+            model.addAttribute("exercicio", exercicio);
+            // CORREÇÃO: popula a lista de equipamentos para o dropdown
+            List<EquipamentoDTO> equipamentos = equipamentoService.listarTodos();
+            model.addAttribute("equipamentos", equipamentos);
+            return "exercicios/form";
+        } catch (IllegalArgumentException e) {
+            throw new ResourceNotFoundException("Exercício não encontrado com ID: " + id);
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar exercício: " + e.getMessage());
+            return "error/500";
+        }
     }
+
 
     @GetMapping("/exercicios/excluir/{id}")
     public String deletarExercicio(@PathVariable Long id) {
@@ -132,19 +186,29 @@ public class WebController {
     // === TREINOS ===
     @GetMapping("/treinos")
     public String listarTreinos(Model model) {
-        List<TreinoDTO> treinos = treinoService.listarTodosTreinos().stream()
-                .map(this::convertToTreinoDTO)
-                .collect(java.util.stream.Collectors.toList());
-        model.addAttribute("treinos", treinos);
-        return "treinos/lista";
+        try {
+            List<TreinoDTO> treinos = treinoService.listarTodosTreinos().stream()
+                    .map(this::convertToTreinoDTO)
+                    .collect(java.util.stream.Collectors.toList());
+            model.addAttribute("treinos", treinos);
+            return "treinos/lista";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar lista de treinos: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/treinos/novo")
     public String novoTreino(Model model) {
-        model.addAttribute("treino", new TreinoDTO());
-        List<AlunoDTO> alunos = alunoService.listarTodos();
-        model.addAttribute("alunos", alunos);
-        return "treinos/form";
+        try {
+            model.addAttribute("treino", new TreinoDTO());
+            List<AlunoDTO> alunos = alunoService.listarTodos();
+            model.addAttribute("alunos", alunos);
+            return "treinos/form";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar formulário de treino: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @PostMapping("/treinos/salvar")
@@ -159,11 +223,19 @@ public class WebController {
 
     @GetMapping("/treinos/editar/{id}")
     public String editarTreino(@PathVariable Long id, Model model) {
-        TreinoDTO treino = convertToTreinoDTO(treinoService.buscarTreinoPorId(id).orElseThrow(() -> new RuntimeException("Treino não encontrado")));
-        model.addAttribute("treino", treino);
-        List<AlunoDTO> alunos = alunoService.listarTodos();
-        model.addAttribute("alunos", alunos);
-        return "treinos/form";
+        try {
+            TreinoDTO treino = convertToTreinoDTO(treinoService.buscarTreinoPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Treino não encontrado com ID: " + id)));
+            model.addAttribute("treino", treino);
+            List<AlunoDTO> alunos = alunoService.listarTodos();
+            model.addAttribute("alunos", alunos);
+            return "treinos/form";
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar treino: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/treinos/excluir/{id}")
@@ -175,15 +247,25 @@ public class WebController {
     // === PERSONAIS ===
     @GetMapping("/personais")
     public String listarPersonais(Model model) {
-        List<PersonalDTO> personais = personalService.listarTodos();
-        model.addAttribute("personais", personais);
-        return "personais/lista";
+        try {
+            List<PersonalDTO> personais = personalService.listarTodos();
+            model.addAttribute("personais", personais);
+            return "personais/lista";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar lista de personais: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/personais/novo")
     public String novoPersonal(Model model) {
-        model.addAttribute("personal", new PersonalDTO());
-        return "personais/form";
+        try {
+            model.addAttribute("personal", new PersonalDTO());
+            return "personais/form";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar formulário de personal: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @PostMapping("/personais/salvar")
@@ -198,9 +280,17 @@ public class WebController {
 
     @GetMapping("/personais/editar/{id}")
     public String editarPersonal(@PathVariable Long id, Model model) {
-        PersonalDTO personal = personalService.buscarPorId(id).orElseThrow(() -> new RuntimeException("Personal não encontrado"));
-        model.addAttribute("personal", personal);
-        return "personais/form";
+        try {
+            PersonalDTO personal = personalService.buscarPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado com ID: " + id));
+            model.addAttribute("personal", personal);
+            return "personais/form";
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar personal: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/personais/excluir/{id}")
@@ -212,15 +302,25 @@ public class WebController {
     // === EQUIPAMENTOS ===
     @GetMapping("/equipamentos")
     public String listarEquipamentos(Model model) {
-        List<EquipamentoDTO> equipamentos = equipamentoService.listarTodos();
-        model.addAttribute("equipamentos", equipamentos);
-        return "equipamentos/lista";
+        try {
+            List<EquipamentoDTO> equipamentos = equipamentoService.listarTodos();
+            model.addAttribute("equipamentos", equipamentos);
+            return "equipamentos/lista";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar lista de equipamentos: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/equipamentos/novo")
     public String novoEquipamento(Model model) {
-        model.addAttribute("equipamento", new EquipamentoDTO());
-        return "equipamentos/form";
+        try {
+            model.addAttribute("equipamento", new EquipamentoDTO());
+            return "equipamentos/form";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar formulário de equipamento: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @PostMapping("/equipamentos/salvar")
@@ -235,9 +335,16 @@ public class WebController {
 
     @GetMapping("/equipamentos/editar/{id}")
     public String editarEquipamento(@PathVariable Long id, Model model) {
-        EquipamentoDTO equipamento = equipamentoService.buscarPorId(id);
-        model.addAttribute("equipamento", equipamento);
-        return "equipamentos/form";
+        try {
+            EquipamentoDTO equipamento = equipamentoService.buscarPorId(id);
+            model.addAttribute("equipamento", equipamento);
+            return "equipamentos/form";
+        } catch (IllegalArgumentException e) {
+            throw new ResourceNotFoundException("Equipamento não encontrado com ID: " + id);
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar equipamento: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/equipamentos/excluir/{id}")
@@ -249,19 +356,29 @@ public class WebController {
     // === PLANOS ===
     @GetMapping("/planos")
     public String listarPlanos(Model model) {
-        List<PlanoDTO> planos = planoService.listarTodos().stream()
-                .map(this::convertToPlanoDTO)
-                .collect(java.util.stream.Collectors.toList());
-        model.addAttribute("planos", planos);
-        return "planos/lista";
+        try {
+            List<PlanoDTO> planos = planoService.listarTodos().stream()
+                    .map(this::convertToPlanoDTO)
+                    .collect(java.util.stream.Collectors.toList());
+            model.addAttribute("planos", planos);
+            return "planos/lista";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar lista de planos: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/planos/novo")
     public String novoPlano(Model model) {
-        model.addAttribute("plano", new PlanoDTO());
-        List<PersonalDTO> personais = personalService.listarTodos();
-        model.addAttribute("personais", personais);
-        return "planos/form";
+        try {
+            model.addAttribute("plano", new PlanoDTO());
+            List<PersonalDTO> personais = personalService.listarTodos();
+            model.addAttribute("personais", personais);
+            return "planos/form";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar formulário de plano: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @PostMapping("/planos/salvar")
@@ -280,53 +397,85 @@ public class WebController {
 
     @GetMapping("/planos/editar/{id}")
     public String editarPlano(@PathVariable Long id, Model model) {
-        PlanoDTO plano = convertToPlanoDTO(planoService.buscarPorId(id).orElseThrow(() -> new RuntimeException("Plano não encontrado")));
-        model.addAttribute("plano", plano);
-        List<PersonalDTO> personais = personalService.listarTodos();
-        model.addAttribute("personais", personais);
-        return "planos/form";
+        try {
+            PlanoDTO plano = convertToPlanoDTO(planoService.buscarPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Plano não encontrado com ID: " + id)));
+            model.addAttribute("plano", plano);
+            List<PersonalDTO> personais = personalService.listarTodos();
+            model.addAttribute("personais", personais);
+            return "planos/form";
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao carregar plano: " + e.getMessage());
+            return "error/500";
+        }
     }
 
     @GetMapping("/planos/excluir/{id}")
     public String deletarPlano(@PathVariable Long id) {
-        com.gymbro.model.Plano plano = planoService.buscarPorId(id).orElseThrow(() -> new RuntimeException("Plano não encontrado"));
+        com.gymbro.model.Plano plano = planoService.buscarPorId(id).orElseThrow(() -> new ResourceNotFoundException("Plano não encontrado com ID: " + id));
         planoService.excluirPlano(id, plano.getCriadorId(), plano.getTipoCriador());
         return "redirect:/web/planos";
     }
 
     // Helper methods for conversion
     private ExercicioDTO convertToExercicioDTO(com.gymbro.model.Exercicio exercicio) {
-        ExercicioDTO dto = new ExercicioDTO();
-        dto.setId(exercicio.getId());
-        dto.setNome(exercicio.getNome());
-        dto.setRegiao(exercicio.getRegiao().getDescricao());
-        dto.setTipo(exercicio.getTipo().getDescricao());
-        dto.setUnilateral(exercicio.getUnilateral());
-        dto.setEquipamentoId(exercicio.getEquipamento() != null ? exercicio.getEquipamento().getId() : null);
-        return dto;
+        try {
+            if (exercicio == null) {
+                throw new IllegalArgumentException("Exercício não pode ser nulo");
+            }
+            
+            ExercicioDTO dto = new ExercicioDTO();
+            dto.setId(exercicio.getId());
+            dto.setNome(exercicio.getNome());
+            dto.setRegiao(exercicio.getRegiao() != null ? exercicio.getRegiao().getDescricao() : "");
+            dto.setTipo(exercicio.getTipo() != null ? exercicio.getTipo().getDescricao() : "");
+            dto.setUnilateral(exercicio.getUnilateral());
+            dto.setEquipamentoId(exercicio.getEquipamento() != null ? exercicio.getEquipamento().getId() : null);
+            return dto;
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao converter exercício para DTO: " + e.getMessage(), e);
+        }
     }
 
     private TreinoDTO convertToTreinoDTO(com.gymbro.model.Treino treino) {
-        TreinoDTO dto = new TreinoDTO();
-        dto.setId(treino.getId());
-        dto.setNome(treino.getNome());
-        dto.setDescricao(treino.getNome());
-        dto.setDataHoraInicio(treino.getDataHoraInicio());
-        dto.setDataHoraFim(treino.getDataHoraFim());
-        dto.setUsuarioId(treino.getUsuarioId());
-        dto.setPersonalId(treino.getPersonalId());
-        return dto;
+        try {
+            if (treino == null) {
+                throw new IllegalArgumentException("Treino não pode ser nulo");
+            }
+            
+            TreinoDTO dto = new TreinoDTO();
+            dto.setId(treino.getId());
+            dto.setNome(treino.getNome());
+            dto.setDescricao(treino.getNome());
+            dto.setDataHoraInicio(treino.getDataHoraInicio());
+            dto.setDataHoraFim(treino.getDataHoraFim());
+            dto.setAlunoId(treino.getUsuarioId());
+            dto.setPersonalId(treino.getPersonalId());
+            return dto;
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao converter treino para DTO: " + e.getMessage(), e);
+        }
     }
 
     private PlanoDTO convertToPlanoDTO(com.gymbro.model.Plano plano) {
-        PlanoDTO dto = new PlanoDTO();
-        dto.setId(plano.getId());
-        dto.setNome(plano.getNome());
-        dto.setDescricao(plano.getDescricao());
-        dto.setCriadorId(plano.getCriadorId());
-        dto.setTipoCriador(plano.getTipoCriador());
-        dto.setPublico(plano.getPublico());
-        dto.setObservacoes(plano.getObservacoes());
-        return dto;
+        try {
+            if (plano == null) {
+                throw new IllegalArgumentException("Plano não pode ser nulo");
+            }
+            
+            PlanoDTO dto = new PlanoDTO();
+            dto.setId(plano.getId());
+            dto.setNome(plano.getNome());
+            dto.setDescricao(plano.getDescricao());
+            dto.setCriadorId(plano.getCriadorId());
+            dto.setTipoCriador(plano.getTipoCriador());
+            dto.setPublico(plano.getPublico());
+            dto.setObservacoes(plano.getObservacoes());
+            return dto;
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao converter plano para DTO: " + e.getMessage(), e);
+        }
     }
 }

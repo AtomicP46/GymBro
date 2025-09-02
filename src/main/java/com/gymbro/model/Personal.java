@@ -13,17 +13,17 @@ import jakarta.validation.constraints.NotNull;
 @Table(name = "personal")
 public class Personal extends Usuario {
 
-    @NotNull(message = "Campo 'formado' é obrigatório")
     @Column(name = "formado", nullable = false)
+    @NotNull(message = "Campo 'formado' é obrigatório")
     private Boolean formado = false;
 
-    @Column(name = "codigo_validacao", length = 50)
+    @Column(name = "codigo_validacao", length = 50, insertable = true, updatable = true)
     private String codigoValidacao;
 
-    @Column(name = "link_validacao", length = 500)
+    @Column(name = "link_validacao", length = 500, insertable = true, updatable = true)
     private String linkValidacao;
 
-    @Column(length = 100)
+    @Column(name = "licenca", length = 100, insertable = true, updatable = true)
     private String licenca;
 
     public Personal() {

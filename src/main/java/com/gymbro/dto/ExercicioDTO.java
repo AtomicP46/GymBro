@@ -19,17 +19,17 @@ public class ExercicioDTO {
     @NotNull(message = "Indicação de unilateralidade é obrigatória")
     private Boolean unilateral;
 
-    @NotNull(message = "Equipamento é obrigatório")
+    // Campo agora opcional: removida a anotação @NotNull
     private Long equipamentoId;
 
     public ExercicioDTO() {
     }
 
     public ExercicioDTO(String nome,
-                         String regiao,
-                         String tipo,
-                         Boolean unilateral,
-                         Long equipamentoId) {
+                        String regiao,
+                        String tipo,
+                        Boolean unilateral,
+                        Long equipamentoId) {
         this.nome = nome;
         this.regiao = regiao;
         this.tipo = tipo;

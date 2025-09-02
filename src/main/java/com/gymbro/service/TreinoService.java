@@ -61,7 +61,7 @@ public class TreinoService {
 
     @Transactional
     public Treino criarTreino(@Valid TreinoDTO treinoDTO) {
-        if (!usuarioExiste(treinoDTO.getUsuarioId())) {
+        if (!usuarioExiste(treinoDTO.getAlunoId())) {
             throw new ResourceNotFoundException("Usuário não encontrado");
         }
         

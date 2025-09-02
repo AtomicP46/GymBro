@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lista de Treinos – GymBro</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"/>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- navbar -->
+  <div th:replace="~{layout :: navbar}"></div>
+
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2><i class="fas fa-calendar-alt"></i> Lista de Treinos</h2>
+      <a th:href="@{/web/treinos/novo}" class="btn btn-warning">
+        <i class="fas fa-plus"></i> Novo Treino
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Aluno ID</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="treino : ${treinos}">
+                <td th:text="${treino.id}"></td>
+                <td th:text="${treino.nome}"></td>
+                <td th:text="${treino.alunoId}"></td>
+                <td th:text="${#dates.format(treino.dataHoraInicio, 'dd/MM/yyyy HH:mm')}"></td>
+                <td th:text="${#dates.format(treino.dataHoraFim, 'dd/MM/yyyy HH:mm')}"></td>
+                <td>
+                  <a th:href="@{/web/treinos/editar/{id}(id=${treino.id})}"
+                     class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-edit"></i> Editar
+                  </a>
+                  <a th:href="@{/web/treinos/excluir/{id}(id=${treino.id})}"
+                     class="btn btn-sm btn-outline-danger"
+                     onclick="return confirm('Tem certeza que deseja deletar este treino?')">
+                    <i class="fas fa-trash"></i> Deletar
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot th:if="${#lists.isEmpty(treinos)}">
+              <tr>
+                <td colspan="6" class="text-center py-4">
+                  <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                  <p class="text-muted">Nenhum treino cadastrado ainda.</p>
+                  <a th:href="@{/web/treinos/novo}" class="btn btn-warning">
+                    <i class="fas fa-plus"></i> Cadastrar Primeiro Treino
+                  </a>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+  </script>
+</body>
+</html>

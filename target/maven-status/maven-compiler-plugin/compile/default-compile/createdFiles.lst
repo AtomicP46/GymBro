@@ -36,7 +36,6 @@ com\gymbro\controller\TreinoController.class
 com\gymbro\repository\EquipamentoRepository.class
 com\gymbro\dto\TreinoExercicioDTO.class
 com\gymbro\service\PlanoExercicioService.class
-com\gymbro\dto\UsuarioDTO.class
 com\gymbro\model\Exercicio.class
 com\gymbro\controller\ExercicioController.class
 com\gymbro\model\Treino.class
@@ -50,6 +49,7 @@ com\gymbro\service\TreinoService.class
 com\gymbro\enums\RegiaoCorpo.class
 com\gymbro\service\ExercicioService.class
 com\gymbro\repository\ExercicioRepository.class
+com\gymbro\exception\WebExceptionHandler.class
 com\gymbro\controller\PlanoController.class
 com\gymbro\exception\UnauthorizedException.class
 com\gymbro\exception\GlobalExceptionHandler$ErrorResponse.class
